@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An interactive number guessing game with different modes and achievements">
+    <meta name="keywords" content="number guessing game, math game, brain training, puzzle game, achievements">
+    <meta name="author" content="Guy Grinberg">
+    <meta name="robots" content="index, follow">
+    <title>GuessRush - Can you guess it?</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔢</text></svg>">
+    
+    <!-- Preload -->
+    <!-- <link rel="preload" href="style.css" as="style"> -->
+    <!-- <link rel="preload" href="script.js" as="script"> -->
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" role="main">
+        <!-- Game Header -->
+        <header role="banner">
+            <h1>GuessRush</h1>
+            <div class="theme-toggle">
+                <button id="themeLight" aria-label="Light theme" title="Light Theme">☀️</button>
+                <button id="themeDark" aria-label="Dark theme" title="Dark Theme">🌙</button>
+                <button id="themeNeon" aria-label="Neon theme" title="Neon Theme">⚡</button>
+                <button id="themePastel" aria-label="Pastel theme" title="Pastel Theme">🌸</button>
+            </div>
+        </header>
+
+        <!-- Game Settings -->
+        <section class="game-settings" role="region" aria-label="Game Settings">
+            <div class="mode-selector">
+                <label for="gameMode">Game Mode:</label>
+                <select id="gameMode" aria-label="Select game mode">
+                    <option value="classic">🎯 Classic Mode</option>
+                    <option value="chaos">🌪️ Chaos Mode</option>
+                    <option value="math">➗ Math Mode</option>
+                    <option value="daily">📅 Daily Challenge</option>
+                    <option value="streak">🔥 Streak Mode</option>
+                    <option value="reverse">🔄 Reverse Mode</option>
+                    <option value="blitz">⚡ Blitz Mode</option>
+                    <option value="sudden">💀 Sudden Death</option>
+                    <option value="bot">🤖 Bot Mode</option>
+                    <option value="doublechaos">🌀 Double Chaos</option>
+                    <option value="breakthebot">🧠 Break the Bot</option>
+                    <option value="practice">🧩 Practice Mode</option>
+                </select>
+            </div>
+            <div class="difficulty-selector">
+                <label for="difficulty">Difficulty:</label>
+                <select id="difficulty" aria-label="Select difficulty level">
+                    <option value="easy">Easy (1-100)</option>
+                    <option value="medium">Medium (1-250)</option>
+                    <option value="hard">Hard (1-500)</option>
+                    <option value="chaos">Chaos (1-1000)</option>
+                </select>
+            </div>
+            <div style="grid-column: 1 / -1; margin-top: 0.5em;">
+                <div id="modeExplanation" class="mode-explanation"></div>
+            </div>
+            <div style="grid-column: 1 / -1; margin-top: 0.2em;">
+                <div id="difficultyExplanation" class="difficulty-explanation"></div>
+            </div>
+        </section>
+
+        <!-- Daily Challenge Info -->
+        <section id="dailyChallengeInfo" class="daily-challenge-info hidden" role="region" aria-label="Daily Challenge Info">
+            <h2>Daily Challenge</h2>
+            <p>Every day, all players get the same secret number to guess. You have only one chance per day!<br>
+            Win to keep your streak alive and unlock daily achievements.<br>
+            The challenge resets at midnight (your local time).</p>
+        </section>
+
+        <!-- Main Game Area -->
+        <main class="game-area" role="region" aria-label="Game Play Area">
+            <div class="game-info" role="status" aria-live="polite">
+                <p>Attempts left: <span id="attemptsLeft">12</span></p>
+                <p>Range: <span id="numberRange">1-100</span></p>
+                <p id="chaosTimer" class="chaos-timer hidden" role="timer" aria-label="Time until next number">Next number in: <span id="timeLeft">5</span>s</p>
+            </div>
+
+            <div class="guess-input" role="form">
+                <input type="number" id="guessInput" placeholder="Enter your guess" min="1" aria-label="Enter your number guess">
+                <button id="submitGuess" aria-label="Submit your guess">Guess!</button>
+                <button id="helpButton" class="help-button" aria-label="Get a hint">Hint!</button>
+            </div>
+            <div id="mathHintsInfo" class="math-hints-info hidden" aria-live="polite">
+                <button id="minimizeMathHints" class="minimize-hints" aria-label="Hide math hints" title="Hide hints">−</button>
+                <span class="minimize-hints-label">Show hints</span>
+                <b>Math Mode Hints Explained:</b>
+                <ul>
+                    <li><b>Even</b>: The number is divisible by 2 (e.g., 2, 4, 6).</li>
+                    <li><b>Odd</b>: The number is not divisible by 2 (e.g., 1, 3, 5).</li>
+                    <li><b>Prime</b>: The number is only divisible by 1 and itself (e.g., 2, 3, 5, 7).</li>
+                    <li><b>Divisible by 3/5/10</b>: The number can be divided by 3, 5, or 10 with no remainder (e.g., 15 is divisible by 5).</li>
+                    <li><b>Square Number</b>: The number is the result of a whole number multiplied by itself (e.g., 9 = 3×3).</li>
+                    <li><b>Sum of Digits</b>: The sum of all digits in the number (e.g., 123 → 1+2+3=6).</li>
+                </ul>
+            </div>
+            <div id="guessHistory" class="guess-history" aria-label="Guess history"></div>
+            <div id="botGuessHistory" class="guess-history bot-history" aria-label="Bot guess history"></div>
+
+            <div class="feedback-area" role="status" aria-live="polite">
+                <p id="feedbackMessage"></p>
+                <button id="shareResultBtn" class="share-result-btn hidden" style="margin-top:0.7em;">Share Result</button>
+            </div>
+
+            <!-- Achievements Display -->
+            <div class="achievements" role="region" aria-label="Achievements">
+                <div class="achievements-header">
+                    <h2>Achievements</h2>
+                    <button id="resetAchievements" class="reset-button" aria-label="Reset all achievements">Reset Achievements</button>
+                </div>
+                <div id="achievementsList" class="achievements-list" role="list"></div>
+            </div>
+        </main>
+
+        <!-- Game Stats -->
+        <section class="game-stats" role="region" aria-label="Game Statistics">
+            <button id="openPersonalStats" class="personal-stats-btn">Personal Stats</button>
+            <button id="openAchievementsPanel" class="achievements-panel-btn">Achievements Panel</button>
+            <div id="playerNameDisplay" class="player-name-display"></div>
+            <div class="stats-header">
+                <h2>Statistics</h2>
+                <button id="resetStats" class="reset-button" aria-label="Reset all statistics">Reset Stats</button>
+            </div>
+            <div id="statsDisplay" role="status" aria-live="polite"></div>
+        </section>
+
+        <!-- Achievements Panel Modal -->
+        <div id="achievementsPanelModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="achievementsPanelTitle">
+          <div class="modal-content" style="min-width:340px;max-width:95vw;">
+            <h2 id="achievementsPanelTitle">Achievements Panel</h2>
+            <div id="achievementsPanelList"></div>
+            <button id="closeAchievementsPanel" style="margin-top:1.2em;">Close</button>
+          </div>
+        </div>
+
+        <!-- Info Row: Keyboard Shortcuts + Game Info & Tips -->
+        <div class="info-row">
+            <section class="info-box shortcuts-info" role="region" aria-label="Keyboard Shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+                <ul>
+                    <li><b>Enter</b> – Submit your guess</li>
+                    <li><b>Esc</b> – Clear the guess input</li>
+                    <li><b>Ctrl + 1</b> – Light theme</li>
+                    <li><b>Ctrl + 2</b> – Dark theme</li>
+                    <li><b>Ctrl + 3</b> – Neon theme</li>
+                    <li><b>Ctrl + 4</b> – Pastel theme</li>
+                    <li><b>Ctrl + Shift + R</b> – Reset statistics</li>
+                    <li><b>Ctrl + Shift + A</b> – Reset achievements</li>
+                    <li><b>Tab</b> – Move between fields and buttons</li>
+                </ul>
+            </section>
+            <section id="gameInfoBox" class="info-box" role="region" aria-label="Game Info and Tips">
+                <h2>Game Info & Tips</h2>
+                <div class="info-section">
+                    <h3>Scoring System</h3>
+                    <ul>
+                        <li>Points are awarded based on difficulty, number of attempts left, and speed.</li>
+                        <li>Bonus for winning on the first guess, not using hints, or being especially fast.</li>
+                        <li>Higher difficulty = more points per win.</li>
+                    </ul>
+                </div>
+                <div class="info-section">
+                    <h3>Achievements</h3>
+                    <ul>
+                        <li><b>Lucky Guess</b>: Win on your first guess.</li>
+                        <li><b>Lightning Fast</b>: Win in less than 4 guesses.</li>
+                        <li><b>Streak Master</b>: Win several games in a row.</li>
+                        <li><b>Perfect Score</b>: Achieve the best possible score.</li>
+                        <li><b>Help Seeker</b>: Win after using hints.</li>
+                        <li>...and many more! Check the Achievements panel in the game.</li>
+                    </ul>
+                </div>
+                <div class="info-section">
+                    <h3>What are HOT and COLD?</h3>
+                    <ul>
+                        <li><b>HOT</b>: Your guess is very close to the secret number (difference of 5 or less).</li>
+                        <li><b>COLD</b>: Your guess is far from the secret number (difference is large).</li>
+                        <li>You'll see visual and text feedback after each guess to help you get closer!</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <!-- Victory Animation Container -->
+        <div id="victoryAnimation" class="victory-animation hidden" role="status" aria-live="polite">You Win! 🎉</div>
+    </div>
+
+    <!-- Daily Challenge Result Modal -->
+    <div id="dailyResultModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dailyResultTitle">
+      <div class="modal-content">
+        <h2 id="dailyResultTitle">Daily Challenge Result</h2>
+        <div id="dailyResultText"></div>
+        <button id="shareDailyResult" class="share-button" aria-label="Share your result">Share Result</button>
+        <button id="closeDailyResult" class="close-button" aria-label="Close">Close</button>
+      </div>
+    </div>
+
+    <!-- Player Name Modal -->
+    <div id="playerNameModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="playerNameTitle">
+      <div class="modal-content">
+        <h2 id="playerNameTitle">Enter Your Name</h2>
+        <input id="playerNameInput" type="text" maxlength="20" placeholder="Player 1" autocomplete="off" />
+        <button id="savePlayerNameBtn">Save</button>
+      </div>
+    </div>
+
+    <!-- Personal Stats Modal -->
+    <div id="personalStatsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="personalStatsTitle">
+      <div class="modal-content" style="min-width:320px;max-width:95vw;">
+        <h2 id="personalStatsTitle">Personal Stats</h2>
+        <div id="personalStatsContent"></div>
+        <button id="closePersonalStats" style="margin-top:1.2em;">Close</button>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const gameModeSelect = document.getElementById('gameMode');
+      const difficultySelector = document.querySelector('.difficulty-selector');
+      function updateDifficultyVisibility() {
+        if (gameModeSelect.value === 'streak') {
+          difficultySelector.style.display = 'none';
+        } else {
+          difficultySelector.style.display = '';
+        }
+      }
+      gameModeSelect.addEventListener('change', updateDifficultyVisibility);
+      updateDifficultyVisibility();
+    });
+    </script>
+</body>
+</html> 

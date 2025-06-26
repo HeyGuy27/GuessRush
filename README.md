@@ -2,6 +2,13 @@
 
 An interactive number guessing game that challenges your intuition and quick thinking! Play across multiple game modes, unlock tiered achievements, and track your stats in a modern, responsive UI.
 
+
+---
+
+## 👉 [🎮 Play Now on GitHub Pages](https://heyguy27.github.io/GuessRush/)
+
+---
+
 ## 📖 Table of Contents
 - About
 - Game Modes

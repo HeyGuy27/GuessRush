@@ -12,14 +12,109 @@
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔢</text></svg>">
     
-    <!-- Preload -->
-    <!-- <link rel="preload" href="style.css" as="style"> -->
-    <!-- <link rel="preload" href="script.js" as="script"> -->
-    
     <!-- Styles -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Welcome Overlay for First-Time Users -->
+    <div id="welcomeOverlay" class="welcome-overlay hidden">
+        <div class="welcome-container">
+            <!-- Step 1: Player Name -->
+            <div id="welcomeStep1" class="welcome-step">
+                <div class="welcome-header">
+                    <h1>🎉 Welcome to GuessRush! 🎉</h1>
+                    <p>Let's get you started with your adventure!</p>
+                </div>
+                <div class="welcome-content">
+                    <h2>What should we call you?</h2>
+                    <div class="name-input-container">
+                        <input type="text" id="playerNameInputWelcome" placeholder="Enter your name" maxlength="20" autocomplete="off">
+                        <button id="continueToInfo" class="welcome-btn primary">Continue</button>
+                    </div>
+                    <p class="welcome-hint">Your name will be displayed in your stats and achievements.</p>
+                </div>
+            </div>
+
+            <!-- Step 2: Game Info & Tips -->
+            <div id="welcomeStep2" class="welcome-step hidden">
+                <div class="welcome-header">
+                    <h1>📚 Game Info & Tips</h1>
+                    <p>Take a moment to learn about the game</p>
+                </div>
+                <div class="welcome-content">
+                    <div class="info-sections">
+                        <div class="info-section">
+                            <h3>🎯 How to Play</h3>
+                            <ul>
+                                <li>Guess the secret number within the given range</li>
+                                <li>You'll get feedback after each guess (HOT/COLD)</li>
+                                <li>Use hints if you get stuck</li>
+                                <li>Try to win with fewer attempts for higher scores!</li>
+                            </ul>
+                        </div>
+                        <div class="info-section">
+                            <h3>🏆 Scoring System</h3>
+                            <ul>
+                                <li>Base score: <b>1000 points</b></li>
+                                <li>-50 points for each guess beyond the first</li>
+                                <li>-2 points per second taken</li>
+                                <li>-100 points if you use a hint</li>
+                                <li>Difficulty multipliers: Easy×1, Medium×1.2, Hard×1.4, Chaos×1.6</li>
+                            </ul>
+                        </div>
+                        <div class="info-section">
+                            <h3>🔥 HOT & COLD</h3>
+                            <ul>
+                                <li><span class="hot-text">HOT</span>: Your guess is very close to the secret number (difference of 5 or less).</li>
+                                <li><span class="cold-text">COLD</span>: Your guess is far from the secret number (difference is large).</li>
+                                <li>Use this feedback to get closer to the secret number!</li>
+                            </ul>
+                        </div>
+                        <div class="info-section">
+                            <h3>🏅 Achievements</h3>
+                            <ul>
+                                <li>Unlock achievements for special accomplishments</li>
+                                <li>Win streaks, perfect scores, and more!</li>
+                                <li>Track your progress in the achievements panel</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="welcome-buttons">
+                        <button id="backToName" class="welcome-btn secondary">Back</button>
+                        <button id="continueToTutorial" class="welcome-btn primary">Continue to Tutorial</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Tutorial -->
+            <div id="welcomeStep3" class="welcome-step hidden">
+                <div class="welcome-header">
+                    <h1>🎓 Quick Tutorial</h1>
+                    <p>Let's practice with a simple example</p>
+                </div>
+                <div class="welcome-content">
+                    <div class="tutorial-game">
+                        <div class="tutorial-info">
+                            <p>I'm thinking of a number between <b>1-10</b></p>
+                            <p>You have <span id="tutorialAttempts">3</span> attempts left</p>
+                        </div>
+                        <div class="tutorial-input">
+                            <input type="number" id="tutorialGuessInput" placeholder="Enter your guess (1-10)" min="1" max="10">
+                            <button id="tutorialSubmit" class="welcome-btn primary">Guess!</button>
+                        </div>
+                        <div id="tutorialFeedback" class="tutorial-feedback"></div>
+                        <div id="tutorialHistory" class="tutorial-history"></div>
+                    </div>
+                    <div class="welcome-buttons">
+                        <button id="backToInfo" class="welcome-btn secondary">Back</button>
+                        <button id="skipTutorial" class="welcome-btn secondary">Skip Tutorial</button>
+                        <button id="finishWelcome" class="welcome-btn primary hidden">Start Playing!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container" role="main">
         <!-- Game Header -->
         <header role="banner">
@@ -45,9 +140,8 @@
                     <option value="reverse">🔄 Reverse Mode</option>
                     <option value="blitz">⚡ Blitz Mode</option>
                     <option value="sudden">💀 Sudden Death</option>
-                    <option value="bot">🤖 Bot Mode</option>
-                    <option value="doublechaos">🌀 Double Chaos</option>
                     <option value="breakthebot">🧠 Break the Bot</option>
+                    <option value="doublechaos">🌀 Double Chaos</option>
                     <option value="practice">🧩 Practice Mode</option>
                 </select>
             </div>
@@ -124,6 +218,7 @@
         <section class="game-stats" role="region" aria-label="Game Statistics">
             <button id="openPersonalStats" class="personal-stats-btn">Personal Stats</button>
             <button id="openAchievementsPanel" class="achievements-panel-btn">Achievements Panel</button>
+            <button id="resetWelcome" class="reset-button" style="margin-left: 0.5rem;" title="Reset welcome flow (for testing)">Reset Welcome</button>
             <div id="playerNameDisplay" class="player-name-display"></div>
             <div class="stats-header">
                 <h2>Statistics</h2>
@@ -162,9 +257,15 @@
                 <div class="info-section">
                     <h3>Scoring System</h3>
                     <ul>
-                        <li>Points are awarded based on difficulty, number of attempts left, and speed.</li>
-                        <li>Bonus for winning on the first guess, not using hints, or being especially fast.</li>
-                        <li>Higher difficulty = more points per win.</li>
+                        <li>Each win starts with a base score of <b>1000 points</b>.</li>
+                        <li>-50 points for every guess beyond the first.</li>
+                        <li>-2 points for every second it takes to win.</li>
+                        <li>-100 points if you use a hint.</li>
+                        <li>Your score is then multiplied by a difficulty bonus:<br>
+                            <b>Easy</b>: ×1 &nbsp; <b>Medium</b>: ×1.2 &nbsp; <b>Hard</b>: ×1.4 &nbsp; <b>Chaos</b>: ×1.6
+                        </li>
+                        <li>Score never goes below 0.</li>
+                        <li>Try to win on your first guess, without hints, and as fast as possible for the highest score!</li>
                     </ul>
                 </div>
                 <div class="info-section">
@@ -181,8 +282,8 @@
                 <div class="info-section">
                     <h3>What are HOT and COLD?</h3>
                     <ul>
-                        <li><b>HOT</b>: Your guess is very close to the secret number (difference of 5 or less).</li>
-                        <li><b>COLD</b>: Your guess is far from the secret number (difference is large).</li>
+                        <li><span class="hot-text">HOT</span>: Your guess is very close to the secret number (difference of 5 or less).</li>
+                        <li><span class="cold-text">COLD</span>: Your guess is far from the secret number (difference is large).</li>
                         <li>You'll see visual and text feedback after each guess to help you get closer!</li>
                     </ul>
                 </div>
@@ -207,7 +308,7 @@
     <div id="playerNameModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="playerNameTitle">
       <div class="modal-content">
         <h2 id="playerNameTitle">Enter Your Name</h2>
-        <input id="playerNameInput" type="text" maxlength="20" placeholder="Player 1" autocomplete="off" />
+        <input id="playerNameInputModal" type="text" maxlength="20" placeholder="Player 1" autocomplete="off" />
         <button id="savePlayerNameBtn">Save</button>
       </div>
     </div>
@@ -222,7 +323,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="script.js" defer></script>
+    <script type="module" src="main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -3,7 +3,7 @@
 ## 🚀 High Priority
 
 ### Code Architecture & Maintainability
-- [ ] Refactor code into modules for better maintainability (achievements, stats, UI, themes, game modes, bot, helpers)
+- [ ] Refactor code into modules for better maintainability (achievements, stats, UI, themes, game modes, helpers)
 - [ ] Add TypeScript support and type definitions for game state, achievements, and stats
 
 ### Testing & Quality Assurance
@@ -23,6 +23,8 @@
 ### User Experience Enhancements
 - [ ] Add sound effects (victory, button, achievement unlock, mute/volume)
 - [ ] Add more animations and micro-interactions
+- [ ] Add more visual feedback for Double Chaos and Blitz (animations, color changes)
+- [ ] Add more achievement popups and polish achievement panel
 
 ## 🔧 Low Priority
 
@@ -43,7 +45,7 @@
 ### Analytics & Monitoring
 - [ ] Add analytics for game completion, engagement, achievement rates, errors, and retention
 
-## 🎯 Future Enhancements
+## 🏆 Future Enhancements
 
 ### Advanced UI/UX
 - [ ] Progressive Web App (PWA) support
@@ -57,13 +59,13 @@
 
 ### Game Mechanics
 - [ ] Enhanced hints, difficulty progression, tutorial, power-ups, streak bonuses
+- [ ] More polish for Break the Bot, Blitz, Double Chaos, and achievement logic
 
 ### Data & Storage
 - [ ] Data export/import, cloud save, backup, privacy controls
 
 ## 📋 Completed Tasks
 - [x] Practice mode: unlimited attempts, no timer, range by difficulty
-- [x] Versus mode: two players, turn-based
 - [x] All game modes support difficulty selection (Easy, Medium, Hard, Chaos)
 - [x] Sudden Death: always 1 attempt, range changes by difficulty
 - [x] Chaos/Double Chaos: timer starts after first guess
@@ -82,8 +84,15 @@
 - [x] Error handling and validation
 - [x] Cross-browser compatibility
 - [x] Code cleanup and documentation
-- [x] Improved achievement logic: always awards highest tier, added Lucky Guess and Speed Demon, fixed bugs with First Win and tiered achievements
+- [x] Improved achievement logic: always awards highest tier, added Lucky Guess, Speed Demon, Blitz Champion, Double Chaos, Break the Bot, fixed bugs with First Win and tiered achievements
 - [x] All explanations/tooltips are now in English
 - [x] Static background (removed dynamic backgrounds per mode)
-
+- [x] Overhauled scoring system: base score, deductions, difficulty multiplier, and bonuses.
+- [x] Stats system: best score, best by mode, total score, average win time, favorite mode, summary table.
+- [x] Favorite mode and avg win time now update correctly.
+- [x] Achievements logic and display fixed (popups, tier logic, new thresholds).
+- [x] Stats and achievements update instantly after each game.
+- [x] Info box and README updated to reflect new scoring system.
+- [x] Remove unnecessary comments from all code files (keep only helpful/clarifying ones)
+- [x] Remove all legacy Bot Mode code and achievements (only Break the Bot remains)
 

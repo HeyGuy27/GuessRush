@@ -977,7 +977,8 @@ input.guess-cold {
   text-align: center;
   min-width: 260px;
 }
-#playerNameInput {
+#playerNameInputWelcome,
+#playerNameInputModal {
   font-size: 1.1em;
   padding: 0.5em 1em;
   margin: 1em 0 1em 0;
@@ -1243,5 +1244,391 @@ input.guess-cold {
     margin-right: 0.5em;
     font-size: 1.1em;
     vertical-align: middle;
+}
+
+/* --- Responsive & Touch Improvements --- */
+
+/* Touch-friendly buttons */
+button, .reset-button, .hint-button, .share-result-btn, .share-button, .close-button, .personal-stats-btn, .achievements-panel-btn {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0.8em 1.2em;
+  font-size: 1.1em;
+  border-radius: 10px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+/* Ensure theme toggle buttons are touch-friendly */
+.theme-toggle button {
+  min-width: 48px;
+  min-height: 48px;
+  font-size: 1.3em;
+  padding: 0.5em 0.7em;
+}
+
+/* Empty state messages for stats/achievements */
+.no-achievements, .no-stats {
+  text-align: center;
+  color: var(--secondary-color);
+  font-size: 1.1em;
+  opacity: 0.8;
+  padding: 1.2em 0.5em;
+}
+
+/* Responsive layout for small screens */
+@media (max-width: 700px) {
+  .container {
+    max-width: 100vw;
+    padding: 0 0.2rem;
+  }
+  .game-area, .game-settings, .achievements, .game-stats, .info-box {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+  h1 {
+    font-size: 1.5rem;
+  }
+  .theme-toggle {
+    flex-direction: row;
+    gap: 0.2em;
+  }
+  .guess-input {
+    flex-direction: column;
+    gap: 0.7em;
+  }
+  .feedback-area {
+    font-size: 1em;
+  }
+  .achievements-list, #statsDisplay {
+    font-size: 0.98em;
+  }
+}
+
+/* Landscape/portrait orientation handling */
+@media (orientation: landscape) and (max-width: 900px) {
+  .container {
+    max-width: 100vw;
+    padding: 0 0.1rem;
+  }
+  .game-area, .game-settings, .achievements, .game-stats, .info-box {
+    padding: 0.7rem;
+    border-radius: 8px;
+  }
+  .info-row {
+    flex-direction: row;
+    gap: 0.5em;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 700px) {
+  .info-row {
+    flex-direction: column;
+    gap: 0.5em;
+  }
+}
+
+/* --- End Responsive & Touch Improvements --- */
+
+/* Welcome Overlay Styles */
+.welcome-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.welcome-overlay.hidden {
+    display: none;
+}
+
+.welcome-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+.welcome-step {
+    text-align: center;
+}
+
+.welcome-step.hidden {
+    display: none;
+}
+
+.welcome-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.welcome-header p {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.welcome-content h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.name-input-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+#playerNameInputWelcome {
+    font-size: 1.2rem;
+    padding: 0.8rem 1rem;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    width: 300px;
+    max-width: 100%;
+    text-align: center;
+    transition: border-color 0.3s;
+}
+
+#playerNameInputWelcome:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.welcome-hint {
+    color: #666;
+    font-style: italic;
+    margin-top: 1rem;
+}
+
+.welcome-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.welcome-btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 120px;
+}
+
+.welcome-btn.primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.welcome-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.welcome-btn.secondary {
+    background: #f8f9fa;
+    color: #333;
+    border: 2px solid #ddd;
+}
+
+.welcome-btn.secondary:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.info-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.info-section {
+    background: #e6e9f5;
+    color: #222;
+    padding: 1.5rem;
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+    border: 1px solid #c3c8e6;
+    box-shadow: 0 2px 8px #0001;
+}
+
+.info-section h3 {
+    color: #222;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.info-section ul, .info-section li {
+    color: #222;
+}
+
+.tutorial-game {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.tutorial-info {
+    margin-bottom: 1.5rem;
+}
+
+.tutorial-info p {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.tutorial-input {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+#tutorialGuessInput {
+    font-size: 1.1rem;
+    padding: 0.7rem 1rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    width: 200px;
+    text-align: center;
+}
+
+#tutorialGuessInput:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.tutorial-feedback {
+    min-height: 60px;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.tutorial-history {
+    min-height: 80px;
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #ddd;
+}
+
+.tutorial-history .guess-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 5px;
+    background: #f8f9fa;
+}
+
+.tutorial-history .guess-item:last-child {
+    margin-bottom: 0;
+}
+
+.tutorial-history .guess-number {
+    font-weight: bold;
+    color: #333;
+}
+
+.tutorial-history .guess-feedback {
+    font-size: 0.9rem;
+}
+
+.tutorial-history .hot {
+    color: #dc3545;
+}
+
+.tutorial-history .cold {
+    color: #007bff;
+}
+
+.tutorial-history .correct {
+    color: #28a745;
+    font-weight: bold;
+}
+
+/* Responsive adjustments for welcome overlay */
+@media (max-width: 768px) {
+    .welcome-container {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .welcome-header h1 {
+        font-size: 2rem;
+    }
+    
+    .welcome-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    #playerNameInputWelcome {
+        width: 100%;
+        max-width: 250px;
+    }
+    
+    .info-sections {
+        grid-template-columns: 1fr;
+    }
+    
+    .tutorial-input {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #tutorialGuessInput {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .welcome-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .welcome-btn {
+        width: 100%;
+        max-width: 200px;
+    }
+}
+
+.hot-text {
+  color: #dc3545;
+  font-weight: bold;
+}
+.cold-text {
+  color: #007bff;
+  font-weight: bold;
 }
 

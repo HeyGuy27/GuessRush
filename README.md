@@ -7,6 +7,16 @@ An interactive number guessing game that challenges your intuition and quick thi
 
 ## 👉 [🎮 Play Now on GitHub Pages](https://heyguy27.github.io/GuessRush/)
 
+## 🚀 Recent Fixes & Improvements
+- **Double Chaos:** Game Over is now shown only when attempts run out, not on timer or invalid input.
+- **Invalid Input:** Entering a number out of range no longer ends the game, only shows an error message.
+- **Guess History:** Guess history is now always accurate, even in timer/range-changing modes.
+- **Debug Logs:** All debug console logs have been removed for a clean console.
+- **State Management:** `guessHistory` is now managed as part of the global state, not as a global variable.
+- **End-of-Game Summary:** The summary modal is shown only for real wins/losses, not for invalid input.
+- **Error Handling:** Error messages are clear and user-friendly; no more Game Over for invalid input.
+- **Code Cleanup:** All debug logs removed, improved code maintainability and readability.
+
 ---
 
 ## 📖 Table of Contents
@@ -32,7 +42,7 @@ GuessRush is a modern number guessing game with innovative features: mathematica
 - **Daily Challenge**: A new challenge every day for all players.
 - **Streak**: Guess correctly 12 times in a row, with the range increasing and attempts decreasing each round.
 - **Reverse**: Hot/Cold hints are reversed.
-- **Blitz**: Only 30 seconds to guess the number. Win fast for special achievements!
+- **Blitz**: Only 30 seconds to guess the number. Timer starts after your first guess. Win fast for special achievements!
 - **Sudden Death**: Only one attempt—range changes by difficulty.
 - **Break the Bot**: Take turns with the bot. The bot never guesses out of range or repeats guesses. If the bot finds the number first, you lose.
 - **Double Chaos**: Every 15 seconds, both the number and range change randomly—timer starts after your first guess. Special achievements for each difficulty.
@@ -59,6 +69,7 @@ All game modes (except Streak, Sudden Death, Double Chaos) support difficulty se
 - **Per-Round Display**: See only the achievements you earned in the current round, until you earn new ones
 - **Achievements Panel**: View all achievements, their status, icons, and descriptions in a dedicated modal
 - **Pop-up notifications**: Achievements now unlock and display correctly, including pop-ups.
+- **Animated achievement popups and modal highlights for new achievements.**
 
 ## 🌐 Features
 - Theme selector: Light, Dark, Neon, Pastel
@@ -73,8 +84,16 @@ All game modes (except Streak, Sudden Death, Double Chaos) support difficulty se
 - Error handling and validation
 - All explanations/tooltips in English
 - Static background (no longer changes per mode)
-- **New:** Stats now include best score, best by mode, total score, average win time, favorite mode, and a summary table. Stats and achievements update instantly after each game.
-- **Bug Fixes:** All bot mode logic removed except Break the Bot, Double Chaos and Blitz achievements fixed, duplicate/locked achievements fixed, UI/UX improvements, and more.
+- **New:** End-of-game summary modal for both wins and losses, with score breakdown, achievements, and Play Again/Close buttons.
+- **New:** Animated circular timer for Blitz, Chaos, and Double Chaos modes, with color transitions and accessibility.
+- **New:** Mini player profile card with initials avatar, tier badge, and favorite mode.
+- **New:** Streak progress bar in Streak mode.
+- **New:** Robust UI/UX for timer and modal resets, including after losses.
+- **New:** Timer in Chaos/Double Chaos/Blitz starts after first guess (Option B).
+- **New:** Consistent modal-based loss handling for all timed modes.
+- **New:** Accessibility and keyboard navigation improvements for modals and game controls.
+- **New:** Robust state-driven timer logic for reliability.
+- **New:** Bug fixes for timer, modal, and UI reset logic.
 
 ## 💯 Scoring System
 - Each win starts with a base score of **1000 points**.
@@ -118,6 +137,7 @@ For first-time players, GuessRush now includes a comprehensive welcome experienc
 - LocalStorage for data persistence
 - Confetti.js for animations
 - Modular, clean code
+- **Robust state-driven timer and modal logic for reliability.**
 
 ## 📋 Project Structure
 - `index.html` — Main game interface
@@ -174,6 +194,7 @@ For first-time players, GuessRush now includes a comprehensive welcome experienc
 
 ## 📸 Screenshots
 *Coming soon!*
+Now includes animated timer, end-of-game modal, and player profile card.
 
 ## 📄 License
 

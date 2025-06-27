@@ -54,6 +54,7 @@ const _gameState = {
     achievementsEarnedThisRound: [],
     lastRoundAchievements: [],
     blitzStarted: false,
+    guessHistory: [],
 };
 
 /**

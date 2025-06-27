@@ -243,6 +243,23 @@ function startNewGameWithTransition() {
 
 export function updateUI() {
     const state = getGameState();
+    let showCircle = false;
+    let timeLeft = null;
+    let totalTime = null;
+    if (state.gameMode === 'blitz') {
+        showCircle = true;
+        totalTime = window.BLITZ_TIME_SEC || 30;
+        timeLeft = typeof state.timeLeft === 'number' ? state.timeLeft : totalTime;
+    } else if (state.gameMode === 'chaos' || state.gameMode === 'doublechaos') {
+        showCircle = true;
+        totalTime = 15;
+        timeLeft = typeof state.timeLeft === 'number' ? state.timeLeft : totalTime;
+    }
+    if (showCircle) {
+        updateTimerCircle(timeLeft, totalTime);
+    } else {
+        updateTimerCircle(null, null);
+    }
     if (state.gameMode === 'practice' || state.gameMode === 'breakthebot') {
         elements.attemptsLeft.parentElement.style.display = 'none';
     } else {
@@ -258,26 +275,29 @@ export function updateUI() {
     if (elements.numberRange) {
         elements.numberRange.textContent = `${state.minRange}-${state.maxRange}`;
     }
-    if (state.gameMode === 'blitz') {
-        elements.chaosTimer.classList.remove('hidden');
-        if (!state.blitzStarted) {
-            elements.timeLeft.textContent = BLITZ_TIME_SEC;
-        }
-    } else if (state.gameMode === 'chaos' || state.gameMode === 'doublechaos') {
-        if (state.chaosStarted) {
-            elements.chaosTimer.classList.remove('hidden');
-        } else {
-            elements.chaosTimer.classList.add('hidden');
-            elements.timeLeft.textContent = 15;
-        }
+    if (state.gameMode === 'blitz' || state.gameMode === 'chaos' || state.gameMode === 'doublechaos') {
+        if (elements.chaosTimer) elements.chaosTimer.classList.add('hidden');
     } else {
-        elements.chaosTimer.classList.add('hidden');
+        if (elements.chaosTimer) elements.chaosTimer.classList.add('hidden');
     }
     updateDailyChallengeInfo(); 
     updateStatsDisplay();
     elements.difficulty.parentElement.style.display = '';
     const diffExp = document.getElementById('difficultyExplanation');
     if (diffExp) diffExp.style.display = '';
+    const streakProgressContainer = document.getElementById('streakProgressContainer');
+    const streakProgressLabel = document.getElementById('streakProgressLabel');
+    const streakProgressFill = document.getElementById('streakProgressFill');
+    if (state.gameMode === 'streak') {
+        if (streakProgressContainer) streakProgressContainer.classList.remove('hidden');
+        const current = state.streakCurrent || 0;
+        const max = 12;
+        if (streakProgressLabel) streakProgressLabel.textContent = `Streak: ${current}/${max}`;
+        if (streakProgressFill) streakProgressFill.style.width = `${(current / max) * 100}%`;
+    } else {
+        if (streakProgressContainer) streakProgressContainer.classList.add('hidden');
+    }
+    updatePlayerProfile();
 }
 
 export function updateStatsDisplay() {
@@ -839,8 +859,9 @@ function handleGuess() {
     updateGuessHistoryDisplay();
     updateUI();
     const state = getGameState();
-    if (state.gameMode === 'blitz' && getGuessHistory().length === 1) {
+    if (state.gameMode === 'blitz' && !state.blitzStarted) {
         gameLogicStartBlitzTimer();
+        if (window.updateUI) window.updateUI();
     }
     if (result) {
         displayFeedbackMessage(result.message, result.type);
@@ -863,7 +884,7 @@ function handleGuess() {
             }, 1000);
             return;
         }
-        if (result.type === 'success' || (result.type === 'error' && result.message && !result.message.includes('valid number between'))) {
+        if (result.type === 'success' || (result.type === 'error' && !(result.message && result.message.includes('valid number between')))) {
             if (result.type === 'success') {
                 showVictoryAnimation();
                 showShareResultBtn(true, {
@@ -906,6 +927,7 @@ function handleGuess() {
             }, 700);
         }
     }
+    showGameSummaryIfNeeded(result);
 }
 
 function handleHelp() {
@@ -922,10 +944,13 @@ export function startNewGame() {
     elements.guessInput.disabled = false;
     elements.submitGuess.disabled = false;
     elements.helpButton.disabled = false;
-    const chaosTimer = document.getElementById('chaosTimer');
-    const timeLeftElem = document.getElementById('timeLeft');
-    if (chaosTimer) chaosTimer.classList.add('hidden');
-    if (timeLeftElem) timeLeftElem.textContent = BLITZ_TIME_SEC;
+    elements.guessInput.value = '';
+    elements.feedbackMessage.textContent = '';
+    setGuessHistory([]);
+    updateGuessHistoryDisplay();
+    const botHistoryDiv = document.getElementById('botGuessHistory');
+    if (botHistoryDiv) botHistoryDiv.innerHTML = '';
+    if (elements.chaosTimer) elements.chaosTimer.classList.add('hidden');
     const result = gameLogicStartNewGame();
     if (result) {
         if (result.type === 'daily_already_played') {
@@ -935,20 +960,8 @@ export function startNewGame() {
             elements.helpButton.disabled = true;
             return;
         }
-        elements.guessInput.value = '';
-        elements.feedbackMessage.textContent = '';
-        elements.helpButton.disabled = false;
-        elements.chaosTimer.classList.add('hidden');
-        setGuessHistory([]);
-        updateGuessHistoryDisplay();
-        const botHistoryDiv = document.getElementById('botGuessHistory');
-        if (botHistoryDiv) botHistoryDiv.innerHTML = '';
-        updateUI();
-        const state = getGameState();
-        if (state.gameMode === 'doublechaos') {
-            gameLogicStartDoubleChaosTimer();
-        }
     }
+    updateUI();
 }
 
 function showDailyResultMessage(result) {
@@ -991,4 +1004,242 @@ function updateDifficultyDropdownForMode(gameMode) {
     }
 }
 
-window.updateUI = updateUI; 
+export function updatePlayerProfile() {
+    const playerProfile = document.getElementById('playerProfile');
+    const playerAvatar = document.getElementById('playerAvatar');
+    const playerNameProfile = document.getElementById('playerNameProfile');
+    const playerTier = document.getElementById('playerTier');
+    const playerFavoriteMode = document.getElementById('playerFavoriteMode');
+    const state = getGameState();
+    const playerName = (window.localStorage && localStorage.getItem('guessRushPlayerName')) || state.playerName || '';
+    if (!playerName) {
+        if (playerProfile) playerProfile.classList.add('hidden');
+        return;
+    }
+    if (playerProfile) playerProfile.classList.remove('hidden');
+    const initials = playerName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    if (playerAvatar) playerAvatar.textContent = initials;
+    if (playerNameProfile) playerNameProfile.textContent = playerName;
+    const tierOrder = ['platinum','gold','silver','bronze'];
+    let highestTier = 'bronze';
+    if (state.achievementsTiers) {
+        for (const tier of tierOrder) {
+            if (Object.values(state.achievementsTiers).some(arr => arr.includes(tier))) {
+                highestTier = tier;
+                break;
+            }
+        }
+    }
+    if (playerTier) {
+        playerTier.textContent = highestTier.charAt(0).toUpperCase() + highestTier.slice(1);
+        playerTier.className = 'player-tier-badge ' + highestTier;
+    }
+    let favoriteMode = 'Classic';
+    let maxPlayed = 0;
+    if (state.stats && state.stats.modesWon) {
+        for (const [mode, count] of Object.entries(state.stats.modesWon)) {
+            if (count > maxPlayed) {
+                maxPlayed = count;
+                favoriteMode = mode.charAt(0).toUpperCase() + mode.slice(1);
+            }
+        }
+    }
+    if (playerFavoriteMode) playerFavoriteMode.textContent = `Favorite: ${favoriteMode}`;
+}
+
+window.startNewGame = startNewGame;
+window.updateUI = updateUI;
+
+export function showEndGameSummary({ score, winTime, numGuesses, achievements, win, mode, difficulty, usedHelp, scoreDetails }) {
+    console.log('showEndGameSummary called');
+    const modal = document.getElementById('endGameSummaryModal');
+    const content = document.getElementById('endGameSummaryContent');
+    const title = document.getElementById('endGameSummaryTitle');
+    const subtitle = document.getElementById('endGameSummarySubtitle');
+    const scoreBreakdown = document.getElementById('scoreBreakdown');
+    const scoreBreakdownContainer = document.getElementById('scoreBreakdownContainer');
+    const toggleScoreBreakdown = document.getElementById('toggleScoreBreakdown');
+    const bestScoreComparison = document.getElementById('bestScoreComparison');
+    const animatedAchievements = document.getElementById('animatedAchievements');
+    if (!modal || !content) return
+    modal.classList.remove('hidden');
+    modal.style.zIndex = '10010';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { modal.classList.add('fade-in'); }, 10);
+    title.textContent = win ? 'You Win!' : 'Game Over';
+    let subtitleText = '';
+    const modeName = mode ? mode.charAt(0).toUpperCase() + mode.slice(1) : '';
+    const diffName = difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : '';
+    subtitleText = `${modeName} Mode – ${diffName}`;
+    if (usedHelp) subtitleText += ' – Hints Used';
+    else subtitleText += ' – No Hints Used';
+    if (subtitle) subtitle.textContent = subtitleText;
+    if (scoreBreakdown && scoreBreakdownContainer && toggleScoreBreakdown) {
+        let breakdownHtml = '';
+        if (scoreDetails) {
+            breakdownHtml += `<div>Base Score: <b>1000</b></div>`;
+            breakdownHtml += `<div>-50 points per guess (×${scoreDetails.numGuesses - 1})</div>`;
+            breakdownHtml += `<div>-2 points per second (×${scoreDetails.winTime})</div>`;
+            if (scoreDetails.usedHelp) breakdownHtml += `<div>-100 points for using a hint</div>`;
+            breakdownHtml += `<div>Difficulty Multiplier: <b>×${scoreDetails.multiplier}</b></div>`;
+            breakdownHtml += `<div style='margin-top:0.5em;font-weight:600;'>Final Score: <span class='score-pop'>${score}</span></div>`;
+        } else {
+            breakdownHtml = 'No breakdown available.';
+        }
+        scoreBreakdown.innerHTML = breakdownHtml;
+        scoreBreakdown.classList.add('hidden');
+        toggleScoreBreakdown.textContent = 'Show Score Breakdown';
+        toggleScoreBreakdown.onclick = () => {
+            scoreBreakdown.classList.toggle('hidden');
+            if (scoreBreakdown.classList.contains('hidden')) {
+                toggleScoreBreakdown.textContent = 'Show Score Breakdown';
+            } else {
+                toggleScoreBreakdown.textContent = 'Hide Score Breakdown';
+            }
+        };
+    }
+    const state = getGameState();
+    let bestScore = 0;
+    if (state.stats && state.stats.bestByMode && mode && state.stats.bestByMode[mode] !== undefined && state.stats.bestByMode[mode] !== null && state.stats.bestByMode[mode] !== Infinity) {
+        bestScore = state.stats.bestByMode[mode];
+    }
+    if (bestScoreComparison) {
+        if (score !== undefined && bestScore !== undefined && bestScore !== null && bestScore !== Infinity) {
+            bestScoreComparison.textContent = `Best score in ${modeName} Mode: ${bestScore}`;
+        } else {
+            bestScoreComparison.textContent = '';
+        }
+    }
+    setTimeout(() => {
+        const scorePop = content.querySelector('.score-pop');
+        if (scorePop) scorePop.classList.add('score-pop');
+    }, 100);
+    if (animatedAchievements) {
+        animatedAchievements.innerHTML = '';
+        if (achievements && achievements.length > 0) {
+            let delay = 0;
+            achievements.forEach(({ name, tier }, idx) => {
+                const span = document.createElement('span');
+                span.className = `summary-achievement ${tier} animated-achievement`;
+                span.style.animationDelay = `${0.3 + idx * 0.25}s`;
+                span.textContent = `${name} ${tier.charAt(0).toUpperCase() + tier.slice(1)}`;
+                animatedAchievements.appendChild(span);
+            });
+        } else {
+            animatedAchievements.innerHTML = `<div class="summary-achievements" style="opacity:0.7;">No achievements this round</div>`;
+        }
+    }
+    let highestTier = 'bronze';
+    if (achievements && achievements.length > 0) {
+        const tierOrder = ['platinum','gold','silver','bronze'];
+        for (const tier of tierOrder) {
+            if (achievements.some(a => a.tier === tier)) {
+                highestTier = tier;
+                break;
+            }
+        }
+    }
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.classList.remove('tier-bronze','tier-silver','tier-gold','tier-platinum');
+        modalContent.classList.add('tier-' + highestTier);
+    }
+    let html = '';
+    html += `<div class="summary-row"><span class="summary-label">Score:</span><span class="summary-value score-pop">${score ?? 0}</span></div>`;
+    html += `<div class="summary-row"><span class="summary-label">Time:</span><span class="summary-value">${winTime ?? 0} sec</span></div>`;
+    html += `<div class="summary-row"><span class="summary-label">Guesses:</span><span class="summary-value">${numGuesses ?? 0}</span></div>`;
+    html += `<div class="summary-row"><span class="summary-label">Mode:</span><span class="summary-value">${modeName}</span></div>`;
+    content.innerHTML = html;
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const closeSummaryBtn = document.getElementById('closeSummaryBtn');
+    if (playAgainBtn) {
+        playAgainBtn.onclick = () => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            const guessInput = document.getElementById('guessInput');
+            const submitGuess = document.getElementById('submitGuess');
+            const helpButton = document.getElementById('helpButton');
+            if (guessInput) guessInput.disabled = false;
+            if (submitGuess) submitGuess.disabled = false;
+            if (helpButton) helpButton.disabled = false;
+            window.startNewGame && window.startNewGame();
+        };
+    }
+    if (closeSummaryBtn) {
+        closeSummaryBtn.onclick = () => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            const guessInput = document.getElementById('guessInput');
+            const submitGuess = document.getElementById('submitGuess');
+            const helpButton = document.getElementById('helpButton');
+            if (guessInput) guessInput.disabled = false;
+            if (submitGuess) submitGuess.disabled = false;
+            if (helpButton) helpButton.disabled = false;
+            window.startNewGame && window.startNewGame();
+        };
+    }
+}
+
+const origDisplayFeedbackMessage = window.displayFeedbackMessage;
+window.displayFeedbackMessage = function(msg, type, extra) {
+    if (extra && extra.endGameSummary) {
+        showEndGameSummary(extra.endGameSummary);
+    }
+    if (origDisplayFeedbackMessage) origDisplayFeedbackMessage.apply(this, arguments);
+};
+
+export function showGameSummaryIfNeeded(result) {
+    if (!result) return;
+    if (result.type === 'success' || (result.type === 'error' && !(result.message && result.message.includes('valid number between')))) {
+        const state = getGameState();
+        const achievements = state.achievementsEarnedThisRound || [];
+        let multiplier = 1;
+        if (state.difficulty === 'medium') multiplier = 1.2;
+        else if (state.difficulty === 'hard') multiplier = 1.4;
+        else if (state.difficulty === 'chaos') multiplier = 1.6;
+        showEndGameSummary({
+            score: result.score,
+            winTime: result.winTime,
+            numGuesses: result.numGuesses,
+            achievements,
+            win: result.type === 'success',
+            mode: result.mode,
+            difficulty: state.difficulty,
+            usedHelp: state.usedHelp,
+            scoreDetails: {
+                numGuesses: result.numGuesses,
+                winTime: result.winTime,
+                usedHelp: state.usedHelp,
+                multiplier
+            }
+        });
+    }
+}
+
+function updateTimerCircle(timeLeft, totalTime) {
+    const container = document.getElementById('timerCircleContainer');
+    if (!container) return;
+    if (typeof timeLeft !== 'number' || typeof totalTime !== 'number' || totalTime <= 0) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+    }
+    container.classList.remove('hidden');
+    const radius = 28;
+    const circumference = 2 * Math.PI * radius;
+    const percent = Math.max(0, Math.min(1, timeLeft / totalTime));
+    let colorClass = '';
+    if (percent <= 0.33) colorClass = 'danger';
+    else if (percent <= 0.66) colorClass = 'warning';
+    else colorClass = '';
+    container.innerHTML = `
+      <svg class="timer-svg" width="64" height="64">
+        <circle class="timer-bg" cx="32" cy="32" r="${radius}" fill="none" />
+        <circle class="timer-fg ${colorClass}" cx="32" cy="32" r="${radius}" fill="none"
+          stroke-dasharray="${circumference}"
+          stroke-dashoffset="${circumference * (1 - percent)}"
+        />
+      </svg>
+      <div class="timer-text">${timeLeft}</div>
+    `;
+} 

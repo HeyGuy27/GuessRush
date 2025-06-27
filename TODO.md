@@ -1,5 +1,14 @@
 # TODO List - GuessRush Project Improvements
 
+## ✅ Recently Completed
+- Double Chaos: Game Over is now shown only when attempts run out, not on timer or invalid input.
+- Invalid input (out of range) no longer ends the game, only shows an error message.
+- guessHistory is now managed as part of the global state, not as a global variable.
+- All debug console logs have been removed.
+- End-of-game summary is shown only for real win/loss, not for invalid input.
+- Error messages are clear and user friendly, no more Game Over for invalid input.
+- Code cleanup: all debug logs removed, improved maintainability.
+
 ## 🚀 High Priority
 
 ### Code Architecture & Maintainability
@@ -95,4 +104,14 @@
 - [x] Info box and README updated to reflect new scoring system.
 - [x] Remove unnecessary comments from all code files (keep only helpful/clarifying ones)
 - [x] Remove all legacy Bot Mode code and achievements (only Break the Bot remains)
+- [x] End-of-game summary modal for all losses (modal appears for Blitz, Chaos, Double Chaos, etc. with Play Again/Close)
+- [x] Animated timer for Blitz/Chaos/Double Chaos (circular, color transitions, accessible)
+- [x] Mini player profile card (initials avatar, tier badge, favorite mode)
+- [x] Streak progress bar in Streak mode
+- [x] Robust timer and modal reset logic (UI always resets, timer always correct)
+- [x] Consistent modal based loss handling for all timed modes
+- [x] Accessibility improvements for modals and game controls
+- [x] Bug fixes for timer, modal, and UI reset logic
+- [x] Fixed Double Chaos bug: attempts now reset when timer resets and range/number change
+- [ ] Consider further polish for modal transitions and timer accessibility
 

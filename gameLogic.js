@@ -4,13 +4,21 @@ import { getItem, setItem } from './storage.js';
 import { CHAOS_INTERVAL_MS, BLITZ_TIME_SEC } from './config.js';
 import { updateDifficultySettings } from './difficulty.js';
 
-let guessHistory = [];
 /**
  * Handle a player guess, including validation, feedback, and state updates.
  * @returns {object} Result object with type/message and additional info.
  */
 export function handleGuess() {
     const state = getGameState();
+    const guessHistory = state.guessHistory || [];
+    if (state.attemptsLeft <= 0) {
+        return { type: 'ui-error', message: 'Please wait for the new round to start...' };
+    }
+    
+    if (state.isTransitioning) {
+        return { type: 'ui-error', message: 'Please wait for the new round to start...' };
+    }
+    
     if ((state.gameMode === 'bot' || state.gameMode === 'breakthebot') && state.botTurn) {
         return { type: 'error', message: "Wait for your turn!" };
     }
@@ -23,8 +31,8 @@ export function handleGuess() {
         startBlitzTimer();
     }
     if (state.gameMode === 'chaos' && !state.chaosStarted) {
-        startChaosTimer();
         setGameState(state => ({ ...state, chaosStarted: true }));
+        startChaosTimer();
     }
     const guess = parseInt(document.getElementById('guessInput').value);
     const number = state.currentNumber;
@@ -45,6 +53,7 @@ export function handleGuess() {
             totalAttempts: state.stats.totalAttempts + 1
         }
     }));
+    
     let guessType = '';
     let feedback = '';
     let hot = false, cold = false;
@@ -94,7 +103,7 @@ export function handleGuess() {
         const newState = getGameState();
         if (newState.gameMode === 'streak' && newState.attemptsLeft === 0) {
             return handleStreakLoss();
-        } else if (newState.attemptsLeft === 0) {
+        } else if (newState.attemptsLeft === 0 && newState.gameMode !== 'doublechaos') {
             if (newState.gameMode === 'sudden') {
                 setTimeout(() => {
                     startNewGame();
@@ -113,15 +122,16 @@ export function handleGuess() {
             }, 800);
         }
     }
-    guessHistory.push({ value: guess, type: guessType });
+    const newGuessHistory = [...guessHistory, { value: guess, type: guessType }];
+    setGameState(s => ({ ...s, guessHistory: newGuessHistory }));
     const realState = _internalGameState();
     if (guess === number) {
-        const numGuesses = guessHistory.length;
+        const numGuesses = newGuessHistory.length;
         if (numGuesses === state.maxAttempts) {
             unlockAchievement(realState, 'Never Give Up', 'bronze');
         }
-        if (guessHistory.length >= 4) {
-            const last3 = guessHistory.slice(-4, -1);
+        if (newGuessHistory.length >= 4) {
+            const last3 = newGuessHistory.slice(-4, -1);
             if (last3.every(g => g.type === 'cold')) {
                 unlockAchievement(realState, 'Comeback King', 'bronze');
             }
@@ -288,7 +298,7 @@ export function handleLoss() {
     return {
         type: 'error',
         message: `Game Over! The number was ${state.currentNumber}`,
-        numGuesses: state.maxAttempts,
+        numGuesses: getGameState().guessHistory.length,
         mode: state.gameMode,
         time: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : null
     };
@@ -530,6 +540,8 @@ export function startNewGame() {
         if (state.chaosCountdownInterval) clearInterval(state.chaosCountdownInterval);
         if (state.chaosInterval) clearInterval(state.chaosInterval);
         if (state.chaosTimeout) clearTimeout(state.chaosTimeout);
+        if (state.blitzInterval) clearInterval(state.blitzInterval);
+        if (state.blitzTimeout) clearTimeout(state.blitzTimeout);
         let minRange = 1, maxRange = 100, maxAttempts = 12;
         if (state.gameMode === 'doublechaos') {
             if (state.difficulty === 'easy') { maxRange = 200; maxAttempts = 12; }
@@ -549,6 +561,12 @@ export function startNewGame() {
             botMin = minRange;
             botMax = maxRange;
         }
+        let timeLeft = null;
+        if (state.gameMode === 'chaos' || state.gameMode === 'doublechaos') {
+            timeLeft = 15;
+        } else if (state.gameMode === 'blitz') {
+            timeLeft = BLITZ_TIME_SEC;
+        }
         return {
             ...state,
             startTime: Date.now(),
@@ -566,7 +584,8 @@ export function startNewGame() {
             maxAttempts,
             attemptsLeft: maxAttempts,
             botMin,
-            botMax
+            botMax,
+            timeLeft
         };
     });
     if (window.updateUI) window.updateUI();
@@ -578,15 +597,8 @@ export function startNewGame() {
         }
     }
     const newNumber = generateNumber();
-    setGameState(state => ({ ...state, currentNumber: newNumber }));
-    guessHistory = [];
+    setGameState(state => ({ ...state, currentNumber: newNumber, guessHistory: [] }));
     updateDifficultySettings();
-    if (getGameState().gameMode === 'chaos') {
-        const chaosTimer = document.getElementById('chaosTimer');
-        const timeLeftElem = document.getElementById('timeLeft');
-        if (chaosTimer) chaosTimer.classList.remove('hidden');
-        if (timeLeftElem) timeLeftElem.textContent = 15;
-    }
     return { type: 'new_game', number: newNumber };
 }
 
@@ -597,31 +609,55 @@ export function startChaosTimer() {
     if (state.chaosTimeout) clearTimeout(state.chaosTimeout);
 
     let timeLeft = 15;
+    setGameState(state => ({ ...state, timeLeft }));
     const chaosTimer = document.getElementById('chaosTimer');
-    const timeLeftElem = document.getElementById('timeLeft');
-    if (timeLeftElem) timeLeftElem.textContent = timeLeft;
 
-    // Timeout for game over
     let chaosTimeout = setTimeout(() => {
         handleLoss();
         if (chaosTimer) chaosTimer.classList.add('hidden');
     }, 15000);
 
-    // Countdown interval for UI
     const countdownInterval = setInterval(() => {
         timeLeft--;
-        if (timeLeftElem) timeLeftElem.textContent = timeLeft;
+        setGameState(state => ({ ...state, timeLeft }));
+        if (window.updateUI) window.updateUI();
         if (timeLeft <= 0) {
             clearInterval(countdownInterval);
+            clearTimeout(chaosTimeout);
+            clearInterval(chaosInterval);
+            const lossResult = handleLoss();
+            import('./ui.js').then(mod => {
+                mod.showEndGameSummary({
+                    score: 0,
+                    winTime: 15,
+                    numGuesses: 0,
+                    achievements: [],
+                    win: false,
+                    mode: 'chaos',
+                    difficulty: getGameState().difficulty,
+                    usedHelp: false,
+                    scoreDetails: null
+                });
+            });
+            const feedbackElem = document.getElementById('feedbackMessage');
+            if (feedbackElem) {
+                feedbackElem.textContent = "Time's up! You lost.";
+                feedbackElem.className = 'error';
+            }
+            const guessInput = document.getElementById('guessInput');
+            const submitGuess = document.getElementById('submitGuess');
+            const helpButton = document.getElementById('helpButton');
+            if (guessInput) guessInput.disabled = true;
+            if (submitGuess) submitGuess.disabled = true;
+            if (helpButton) helpButton.disabled = true;
         }
     }, 1000);
 
-    // Number changing interval
     const chaosInterval = setInterval(() => {
         const newNumber = generateNumber();
         setGameState(state => ({ ...state, currentNumber: newNumber }));
         timeLeft = 15;
-        if (timeLeftElem) timeLeftElem.textContent = timeLeft;
+        setGameState(state => ({ ...state, timeLeft }));
         clearTimeout(chaosTimeout);
         chaosTimeout = setTimeout(() => {
             handleLoss();
@@ -633,24 +669,30 @@ export function startChaosTimer() {
         ...state,
         chaosInterval,
         chaosCountdownInterval: countdownInterval,
-        chaosTimeout
+        chaosTimeout,
+        timeLeft
     }));
 }
 
 export function startDoubleChaosTimer() {
     const state = getGameState();
     if (!state.chaosStarted) return;
+    if (state.chaosCountdownInterval) return;
     if (state.chaosInterval) clearInterval(state.chaosInterval);
     if (state.chaosCountdownInterval) clearInterval(state.chaosCountdownInterval);
 
     let timeLeft = 15;
+    setGameState(state => ({ ...state, timeLeft }));
     const chaosTimer = document.getElementById('chaosTimer');
-    const timeLeftElem = document.getElementById('timeLeft');
     if (chaosTimer) chaosTimer.classList.remove('hidden');
-    if (timeLeftElem) timeLeftElem.textContent = timeLeft;
 
     function setNewRangeAndNumber() {
         const currentState = getGameState();
+        if (currentState.attemptsLeft <= 0) {
+            if (window.updateUI) window.updateUI();
+            handleLoss();
+            return;
+        }
         let fullMin = 1, fullMax = 200, attempts = 12;
         if (currentState.difficulty === 'medium') { fullMax = 400; attempts = 10; }
         else if (currentState.difficulty === 'hard') { fullMax = 600; attempts = 8; }
@@ -659,43 +701,58 @@ export function startDoubleChaosTimer() {
         let max = Math.floor(Math.random() * (fullMax - min + 1)) + min;
         if (max - min < 10) max = min + 10;
         if (max > fullMax) max = fullMax;
+
+        const submitGuess = document.getElementById('submitGuess');
+        if (submitGuess) submitGuess.disabled = true;
+
         setGameState(state => ({
             ...state,
-            minRange: min,
-            maxRange: max,
-            maxAttempts: attempts,
-            currentNumber: Math.floor(Math.random() * (max - min + 1)) + min
+            isTransitioning: true
         }));
-        guessHistory = [];
-        const feedbackElem = document.getElementById('feedbackMessage');
-        if (feedbackElem) {
-            feedbackElem.textContent = 'The range and number have changed!';
-            feedbackElem.classList.add('slide-in');
-            setTimeout(() => feedbackElem.classList.remove('slide-in'), 700);
-        }
-        if (window.updateUI) window.updateUI();
-        const rangeElem = document.getElementById('numberRange');
-        if (rangeElem) {
-            rangeElem.classList.add('range-animate');
-            setTimeout(() => rangeElem.classList.remove('range-animate'), 700);
-        }
+
+        setTimeout(() => {
+            setGameState(state => ({
+                ...state,
+                minRange: min,
+                maxRange: max,
+                currentNumber: Math.floor(Math.random() * (max - min + 1)) + min,
+                isTransitioning: false,
+                chaosStarted: true
+            }));
+            const feedbackElem = document.getElementById('feedbackMessage');
+            if (feedbackElem) {
+                feedbackElem.textContent = 'The range and number have changed!';
+                feedbackElem.classList.add('slide-in');
+                setTimeout(() => feedbackElem.classList.remove('slide-in'), 700);
+            }
+            if (window.updateUI) window.updateUI();
+            const rangeElem = document.getElementById('numberRange');
+            if (rangeElem) {
+                rangeElem.classList.add('range-animate');
+                setTimeout(() => rangeElem.classList.remove('range-animate'), 700);
+            }
+            setTimeout(() => {
+                if (submitGuess) submitGuess.disabled = false;
+            }, 100);
+        }, 100);
     }
 
-    // Countdown interval for UI
     const countdownInterval = setInterval(() => {
         timeLeft--;
-        if (timeLeftElem) timeLeftElem.textContent = timeLeft;
+        setGameState(state => ({ ...state, timeLeft }));
+        if (window.updateUI) window.updateUI();
         if (timeLeft <= 0) {
             setNewRangeAndNumber();
             timeLeft = 15;
-            if (timeLeftElem) timeLeftElem.textContent = timeLeft;
+            setGameState(state => ({ ...state, timeLeft }));
         }
     }, 1000);
 
     setGameState(state => ({
         ...state,
         chaosCountdownInterval: countdownInterval,
-        chaosInterval: null // not used in doublechaos
+        chaosInterval: null,
+        timeLeft
     }));
 }
 
@@ -704,16 +761,16 @@ export function startBlitzTimer() {
     if (state.blitzTimeout) clearTimeout(state.blitzTimeout);
     if (state.blitzInterval) clearInterval(state.blitzInterval);
 
-    // Show the timer in the UI
     const chaosTimer = document.getElementById('chaosTimer');
     if (chaosTimer) chaosTimer.classList.remove('hidden');
-    const timeLeftElem = document.getElementById('timeLeft');
-    if (timeLeftElem) timeLeftElem.textContent = BLITZ_TIME_SEC;
-
     let timeLeft = BLITZ_TIME_SEC;
+    setGameState(state => ({ ...state, timeLeft }));
+    if (window.updateUI) window.updateUI();
+
     const interval = setInterval(() => {
         timeLeft--;
-        if (timeLeftElem) timeLeftElem.textContent = timeLeft;
+        setGameState(state => ({ ...state, timeLeft }));
+        if (window.updateUI) window.updateUI();
         if (timeLeft <= 0) {
             clearInterval(interval);
             if (chaosTimer) chaosTimer.classList.add('hidden');
@@ -726,7 +783,8 @@ export function startBlitzTimer() {
         blitzTimeout: setTimeout(() => {
             handleBlitzTimeout();
         }, BLITZ_TIME_SEC * 1000),
-        blitzInterval: interval
+        blitzInterval: interval,
+        timeLeft
     }));
 }
 
@@ -743,11 +801,19 @@ export function handleBlitzTimeout() {
     if (guessInput) guessInput.disabled = true;
     if (submitGuess) submitGuess.disabled = true;
     if (helpButton) helpButton.disabled = true;
-    setTimeout(() => {
-        import('./ui.js').then(mod => {
-            mod.startNewGame();
+    import('./ui.js').then(mod => {
+        mod.showEndGameSummary({
+            score: 0,
+            winTime: BLITZ_TIME_SEC,
+            numGuesses: 0,
+            achievements: [],
+            win: false,
+            mode: 'blitz',
+            difficulty: getGameState().difficulty,
+            usedHelp: false,
+            scoreDetails: null
         });
-    }, 4000);
+    });
 }
 
 export function breakTheBotTakeTurn() {
@@ -945,13 +1011,12 @@ export function getTodayDateStr() {
     return new Date().toISOString().slice(0, 10);
 }
 
-// Export guessHistory for UI access
 export function getGuessHistory() {
-    return guessHistory;
+    return getGameState().guessHistory || [];
 }
 
 export function setGuessHistory(history) {
-    guessHistory = history;
+    setGameState(state => ({ ...state, guessHistory: history }));
 }
 
 /**
@@ -965,13 +1030,12 @@ function safeParseDate(dateStr) {
 }
 
 export function startNextStreakRound() {
-    // Only reset what is needed for the next round in streak mode
     setGameState(state => ({
         ...state,
         currentNumber: generateNumber(),
         attemptsLeft: state.maxAttempts,
         usedHelp: false,
-        achievementsEarnedThisRound: []
+        achievementsEarnedThisRound: [],
+        guessHistory: []
     }));
-    guessHistory = [];
 } 

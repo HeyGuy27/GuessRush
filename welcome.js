@@ -2,7 +2,6 @@ import { getItem, setItem } from './storage.js';
 import { setGameState } from './state.js';
 import { updatePlayerNameDisplay } from './ui.js';
 
-// Welcome flow state
 let currentStep = 1;
 let playerName = '';
 let tutorialNumber = 0;
@@ -10,7 +9,6 @@ let tutorialAttempts = 3;
 let tutorialGuesses = [];
 let previousDistance = null;
 
-// DOM elements
 const welcomeOverlay = document.getElementById('welcomeOverlay');
 const welcomeStep1 = document.getElementById('welcomeStep1');
 const welcomeStep2 = document.getElementById('welcomeStep2');
@@ -28,9 +26,7 @@ const tutorialAttemptsSpan = document.getElementById('tutorialAttempts');
 const tutorialFeedback = document.getElementById('tutorialFeedback');
 const tutorialHistory = document.getElementById('tutorialHistory');
 
-/**
- * Check if this is the user's first time and show welcome flow
- */
+
 export function checkFirstTimeUser() {
     const hasCompletedWelcome = getItem('guessRushWelcomeCompleted');
     const playerName = getItem('guessRushPlayerName');
@@ -42,27 +38,19 @@ export function checkFirstTimeUser() {
     return false;
 }
 
-/**
- * Show the welcome overlay
- */
+
 function showWelcomeOverlay() {
     welcomeOverlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
-    // Focus on the name input
     setTimeout(() => {
         playerNameInput.focus();
     }, 100);
     
-    // Setup event listeners
     setupWelcomeEventListeners();
 }
 
-/**
- * Setup all event listeners for the welcome flow
- */
 function setupWelcomeEventListeners() {
-    // Step 1: Player Name
     continueToInfo.addEventListener('click', handleContinueToInfo);
     playerNameInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -70,16 +58,13 @@ function setupWelcomeEventListeners() {
         }
     });
     
-    // Step 2: Game Info
     backToName.addEventListener('click', () => showStep(1));
     continueToTutorial.addEventListener('click', () => showStep(3));
     
-    // Step 3: Tutorial
     backToInfo.addEventListener('click', () => showStep(2));
     skipTutorial.addEventListener('click', handleFinishWelcome);
     finishWelcome.addEventListener('click', handleFinishWelcome);
     
-    // Tutorial game
     tutorialSubmit.addEventListener('click', handleTutorialGuess);
     tutorialGuessInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -88,9 +73,6 @@ function setupWelcomeEventListeners() {
     });
 }
 
-/**
- * Handle continuing from name input to game info
- */
 function handleContinueToInfo() {
     const name = playerNameInput.value.trim();
     if (!name) {
@@ -104,18 +86,13 @@ function handleContinueToInfo() {
     showStep(2);
 }
 
-/**
- * Show a specific step in the welcome flow
- */
 function showStep(step) {
     currentStep = step;
     
-    // Hide all steps
     welcomeStep1.classList.add('hidden');
     welcomeStep2.classList.add('hidden');
     welcomeStep3.classList.add('hidden');
     
-    // Show the current step
     switch (step) {
         case 1:
             welcomeStep1.classList.remove('hidden');
@@ -131,11 +108,8 @@ function showStep(step) {
     }
 }
 
-/**
- * Start the tutorial game
- */
 function startTutorial() {
-    tutorialNumber = Math.floor(Math.random() * 10) + 1; // 1-10
+    tutorialNumber = Math.floor(Math.random() * 10) + 1; 
     tutorialAttempts = 3;
     tutorialGuesses = [];
     previousDistance = null;
@@ -149,9 +123,6 @@ function startTutorial() {
     finishWelcome.classList.add('hidden');
 }
 
-/**
- * Handle tutorial guess submission
- */
 function handleTutorialGuess() {
     const guess = parseInt(tutorialGuessInput.value);
     
@@ -162,13 +133,12 @@ function handleTutorialGuess() {
     }
     
     tutorialAttempts--;
+    if (tutorialAttempts < 0) tutorialAttempts = 0;
     tutorialAttemptsSpan.textContent = tutorialAttempts;
     
-    // Add guess to history
     tutorialGuesses.push(guess);
     addTutorialGuessToHistory(guess);
     
-    // Check if correct
     if (guess === tutorialNumber) {
         tutorialFeedback.textContent = `🎉 Correct! The number was ${tutorialNumber}`;
         tutorialFeedback.style.color = '#28a745';
@@ -181,7 +151,6 @@ function handleTutorialGuess() {
         return;
     }
     
-    // Provide feedback
     const difference = Math.abs(guess - tutorialNumber);
     let feedback = '';
     let color = '';
@@ -192,7 +161,6 @@ function handleTutorialGuess() {
         direction = ' Try lower!';
     }
     if (previousDistance === null) {
-        // First guess
         if (difference <= 2) {
             feedback = '🔥 HOT! You\'re very close!';
             color = '#dc3545';
@@ -221,11 +189,28 @@ function handleTutorialGuess() {
     
     tutorialGuessInput.value = '';
     tutorialGuessInput.focus();
+
+    if (tutorialAttempts === 0 && guess !== tutorialNumber) {
+        tutorialGuessInput.disabled = true;
+        tutorialSubmit.disabled = true;
+        tutorialFeedback.innerHTML = `❌ Out of attempts!<br>Would you like to try the tutorial again or move to the game?`;
+        tutorialFeedback.style.color = '#dc3545';
+        finishWelcome.classList.remove('hidden');
+        if (!document.getElementById('retryTutorialBtn')) {
+            const retryBtn = document.createElement('button');
+            retryBtn.id = 'retryTutorialBtn';
+            retryBtn.className = 'welcome-btn secondary';
+            retryBtn.textContent = 'Retry Tutorial';
+            retryBtn.onclick = () => {
+                startTutorial();
+                retryBtn.remove();
+            };
+            finishWelcome.parentNode.insertBefore(retryBtn, finishWelcome);
+        }
+        return;
+    }
 }
 
-/**
- * Add a guess to the tutorial history
- */
 function addTutorialGuessToHistory(guess) {
     const difference = Math.abs(guess - tutorialNumber);
     let feedback = '';
@@ -252,26 +237,18 @@ function addTutorialGuessToHistory(guess) {
     tutorialHistory.appendChild(guessItem);
 }
 
-/**
- * Handle finishing the welcome flow
- */
 function handleFinishWelcome() {
-    // Save player name
     setItem('guessRushPlayerName', playerName);
     
-    // Mark welcome as completed
     setItem('guessRushWelcomeCompleted', true);
     
-    // Update game state with player name
     setGameState(state => ({
         ...state,
         playerName: playerName
     }));
     
-    // Hide welcome overlay
     welcomeOverlay.classList.add('hidden');
     document.body.style.overflow = '';
     
-    // Update player name display using the existing function
     updatePlayerNameDisplay();
 } 

@@ -1632,3 +1632,220 @@ button, .reset-button, .hint-button, .share-result-btn, .share-button, .close-bu
   font-weight: bold;
 }
 
+.streak-progress-container {
+  margin-bottom: 1.2rem;
+  text-align: center;
+}
+#streakProgressBar {
+  height: 18px;
+  background: #e0e7ef;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+}
+#streakProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg,#667eea,#764ba2);
+  border-radius: 10px 0 0 10px;
+  transition: width 0.4s;
+  min-width: 0;
+}
+#streakProgressLabel {
+  font-weight: 600;
+  margin-bottom: 0.3em;
+  color: #4b4b6b;
+  letter-spacing: 0.5px;
+}
+
+.player-profile-card {
+  max-width: 320px;
+  margin: 0 auto 1.2rem auto;
+  display: flex;
+  align-items: center;
+  gap: 1.1em;
+  padding: 1em 1.3em;
+  background: #f8f9fa;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #0001;
+}
+.player-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #e0e7ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7em;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 2px 8px #0002;
+  user-select: none;
+}
+.player-tier-badge {
+  padding: 0.2em 0.7em;
+  border-radius: 8px;
+  font-size: 0.98em;
+  font-weight: 600;
+  background: #b08d57;
+  color: #fff;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 4px #0001;
+}
+.player-tier-badge.bronze { background: #b08d57; }
+.player-tier-badge.silver { background: #bfc1c2; color: #333; }
+.player-tier-badge.gold { background: #ffd700; color: #333; }
+.player-tier-badge.platinum { background: #00bcd4; }
+#playerFavoriteMode {
+  font-size: 0.98em;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+#endGameSummaryModal.modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(30,40,60,0.25);
+  z-index: 10010;
+}
+#endGameSummaryModal .modal-content {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px #0003;
+  padding: 2.2em 2.5em 1.5em 2.5em;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+}
+#endGameSummaryTitle {
+  font-size: 2em;
+  margin-bottom: 0.7em;
+  color: #764ba2;
+  letter-spacing: 0.5px;
+}
+#endGameSummaryContent {
+  font-size: 1.13em;
+  margin-bottom: 1.2em;
+}
+#endGameSummaryContent .summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.5em 0;
+  font-size: 1.08em;
+}
+#endGameSummaryContent .summary-label {
+  color: #666;
+  font-weight: 500;
+}
+#endGameSummaryContent .summary-value {
+  font-weight: 700;
+  color: #333;
+}
+#endGameSummaryContent .summary-achievements {
+  margin-top: 1.2em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7em;
+  justify-content: center;
+}
+#endGameSummaryContent .summary-achievement {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 0.4em 0.9em;
+  font-size: 0.98em;
+  font-weight: 600;
+  box-shadow: 0 1px 4px #0001;
+}
+#endGameSummaryContent .summary-achievement.bronze { background: #fbeee0; color: #b08d57; }
+#endGameSummaryContent .summary-achievement.silver { background: #f4f4f4; color: #bfc1c2; }
+#endGameSummaryContent .summary-achievement.gold { background: #fffbe0; color: #ffd700; }
+#endGameSummaryContent .summary-achievement.platinum { background: #e0f7fa; color: #00bcd4; }
+
+#endGameSummarySubtitle {
+  font-size: 1.08em;
+  color: #666;
+  margin-bottom: 0.7em;
+}
+#endGameSummaryModal .modal-content.tier-bronze { background: linear-gradient(135deg,#fff7e0,#fbeee0 80%); }
+#endGameSummaryModal .modal-content.tier-silver { background: linear-gradient(135deg,#f4f4f4,#e9e9f9 80%); }
+#endGameSummaryModal .modal-content.tier-gold { background: linear-gradient(135deg,#fffbe0,#fff7c0 80%); }
+#endGameSummaryModal .modal-content.tier-platinum { background: linear-gradient(135deg,#e0f7fa,#e0faff 80%); }
+
+.animated-achievement {
+  animation: fadeInUp 0.7s cubic-bezier(.23,1.01,.32,1) both, bounceGlow 1.2s 1;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes bounceGlow {
+  0% { box-shadow: 0 0 0 0 #ffd70044; transform: scale(1); }
+  40% { box-shadow: 0 0 16px 8px #ffd70088; transform: scale(1.15); }
+  60% { box-shadow: 0 0 8px 4px #ffd70044; transform: scale(0.97); }
+  100% { box-shadow: 0 0 0 0 #ffd70000; transform: scale(1); }
+}
+.score-pop {
+  animation: scorePop 0.7s cubic-bezier(.23,1.01,.32,1) both;
+}
+@keyframes scorePop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); color: #764ba2; }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.timer-circle-container {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 0.5em auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.timer-svg {
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+}
+.timer-bg {
+  stroke: #e0e7ef;
+  stroke-width: 7;
+}
+.timer-fg {
+  stroke: #00c853;
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke 0.3s, stroke-dasharray 0.2s;
+}
+.timer-fg.warning {
+  stroke: #ffd600;
+}
+.timer-fg.danger {
+  stroke: #ff1744;
+}
+.timer-text {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25em;
+  font-weight: 700;
+  color: #333;
+  pointer-events: none;
+  user-select: none;
+}
+

@@ -3,6 +3,13 @@ import { unlockAchievement, tieredAchievements } from './achievements.js';
 import { getItem, setItem } from './storage.js';
 import { CHAOS_INTERVAL_MS, BLITZ_TIME_SEC } from './config.js';
 import { updateDifficultySettings } from './difficulty.js';
+import { 
+    updatePersonalBests, 
+    updateAdvancedStats, 
+    updateRanking, 
+    calculateExperience, 
+    calculateEfficiency 
+} from './statsManager.js';
 
 /**
  * Handle a player guess, including validation, feedback, and state updates.
@@ -11,7 +18,7 @@ import { updateDifficultySettings } from './difficulty.js';
 export function handleGuess() {
     const state = getGameState();
     const guessHistory = state.guessHistory || [];
-    if (state.attemptsLeft <= 0) {
+    if (state.gameMode !== 'practice' && state.attemptsLeft <= 0) {
         return { type: 'ui-error', message: 'Please wait for the new round to start...' };
     }
     
@@ -35,24 +42,34 @@ export function handleGuess() {
         startChaosTimer();
     }
     const guess = parseInt(document.getElementById('guessInput').value);
+    if (isNaN(guess) || guess === null || guess === undefined) {
+        return { type: 'error', message: 'Please enter a valid number.' };
+    }
+    if (guess < state.minRange || guess > state.maxRange) {
+        return { type: 'error', message: `Please enter a valid number between ${state.minRange} and ${state.maxRange}.` };
+    }
     const number = state.currentNumber;
     const min = state.minRange;
     const max = state.maxRange;
     const range = max - min;
-    if (state.gameMode !== 'breakthebot' && state.attemptsLeft <= 0) {
-        return { type: 'error', message: 'No attempts left! Start a new game.' };
+    if (state.gameMode !== 'practice') {
+        setGameState(state => ({
+            ...state,
+            attemptsLeft: state.gameMode === 'breakthebot' ? state.attemptsLeft : state.attemptsLeft - 1,
+            stats: {
+                ...state.stats,
+                totalAttempts: state.stats.totalAttempts + 1
+            }
+        }));
+    } else {
+        setGameState(state => ({
+            ...state,
+            stats: {
+                ...state.stats,
+                totalAttempts: state.stats.totalAttempts + 1
+            }
+        }));
     }
-    if (isNaN(guess) || guess < min || guess > max) {
-        return { type: 'error', message: `Please enter a valid number between ${min} and ${max}!` };
-    }
-    setGameState(state => ({
-        ...state,
-        attemptsLeft: state.gameMode === 'breakthebot' ? state.attemptsLeft : state.attemptsLeft - 1,
-        stats: {
-            ...state.stats,
-            totalAttempts: state.stats.totalAttempts + 1
-        }
-    }));
     
     let guessType = '';
     let feedback = '';
@@ -103,7 +120,7 @@ export function handleGuess() {
         const newState = getGameState();
         if (newState.gameMode === 'streak' && newState.attemptsLeft === 0) {
             return handleStreakLoss();
-        } else if (newState.attemptsLeft === 0 && newState.gameMode !== 'doublechaos') {
+        } else if (newState.gameMode !== 'practice' && newState.attemptsLeft === 0 && newState.gameMode !== 'doublechaos') {
             if (newState.gameMode === 'sudden') {
                 setTimeout(() => {
                     startNewGame();
@@ -126,7 +143,7 @@ export function handleGuess() {
     setGameState(s => ({ ...s, guessHistory: newGuessHistory }));
     const realState = _internalGameState();
     if (guess === number) {
-        const numGuesses = newGuessHistory.length;
+        const numGuesses = (realState.guessHistory ? realState.guessHistory.length : 0) + 1;
         if (numGuesses === state.maxAttempts) {
             unlockAchievement(realState, 'Never Give Up', 'bronze');
         }
@@ -142,6 +159,19 @@ export function handleGuess() {
 
 export function handleWin() {
     const state = getGameState();
+    if (state.gameMode === 'practice') {
+        const realState = _internalGameState();
+        const numGuesses = (realState.guessHistory ? realState.guessHistory.length : 0) + 1;
+        const winTime = realState.startTime ? Math.round((Date.now() - realState.startTime) / 1000) : 0;
+        return {
+            type: 'success',
+            message: `Congratulations! You guessed the number!`,
+            numGuesses,
+            winTime,
+            mode: realState.gameMode,
+            score: 0
+        };
+    }
     const realState = _internalGameState();
     setGameState(state => ({
         ...state,
@@ -173,13 +203,23 @@ export function handleWin() {
         if (state.difficulty === 'chaos') unlockAchievement(realState, 'Lord of the Double Chaos', 'platinum');
     }
 
-    const numGuesses = realState.maxAttempts - realState.attemptsLeft;
+    const numGuesses = (realState.guessHistory ? realState.guessHistory.length : 0) + 1;
     const winTime = realState.startTime ? Math.round((Date.now() - realState.startTime) / 1000) : 0;
     const usedHelp = realState.usedHelp;
+    updatePerfectGamesCounter(numGuesses, winTime, usedHelp);
     const mode = realState.gameMode;
     const range = realState.maxRange - realState.minRange;
     const difficulty = realState.difficulty;
     const score = calculateScore({ numGuesses, winTime, usedHelp, difficulty });
+
+    const efficiency = calculateEfficiency(numGuesses, realState.maxAttempts, winTime, difficulty);
+    
+    updatePersonalBests(mode, score, winTime, efficiency);
+    
+    updateAdvancedStats(mode, difficulty, true, winTime, numGuesses, score);
+    
+    const experienceEarned = calculateExperience(true, score, difficulty, numGuesses, winTime);
+    updateRanking(experienceEarned);
 
     if (state.gameMode === 'blitz') {
         if (winTime < 60) unlockAchievement(realState, 'Blitz Champion', 'bronze');
@@ -244,6 +284,16 @@ export function handleWin() {
     if (winTime !== null && winTime < 30) unlockAchievement(realState, 'Speed Demon', 'bronze');
     if (winTime !== null && winTime < 20) unlockAchievement(realState, 'Speed Demon', 'silver');
     if (winTime !== null && winTime < 10) unlockAchievement(realState, 'Speed Demon', 'gold');
+    
+    // Perfect Game achievements
+    const perfectGames = realState.stats.perfectGames || 0;
+    if (isPerfectGame(numGuesses, winTime, usedHelp)) {
+        if (perfectGames >= 1) unlockAchievement(realState, 'Perfect Game', 'bronze');
+        if (perfectGames >= 3) unlockAchievement(realState, 'Perfect Game', 'silver');
+        if (perfectGames >= 5) unlockAchievement(realState, 'Perfect Game', 'gold');
+        if (perfectGames >= 10) unlockAchievement(realState, 'Perfect Game', 'platinum');
+    }
+    
     updateDailyStats(true);
 
     if (realState.gameMode === 'daily') {
@@ -269,12 +319,21 @@ export function handleWin() {
 
 export function handleLoss() {
     const state = getGameState();
+    const realState = _internalGameState();
+    
     if (state.gameMode === 'blitz') {
         if (state.blitzInterval) clearInterval(state.blitzInterval);
         if (state.blitzTimeout) clearTimeout(state.blitzTimeout);
         const chaosTimer = document.getElementById('chaosTimer');
         if (chaosTimer) chaosTimer.classList.add('hidden');
     }
+    
+    const lossTime = realState.startTime ? Math.round((Date.now() - realState.startTime) / 1000) : 0;
+    const numGuesses = realState.maxAttempts - realState.attemptsLeft;
+    const mode = realState.gameMode;
+    const difficulty = realState.difficulty;
+    const score = 0; 
+    
     setGameState(state => ({
         ...state,
         stats: {
@@ -282,6 +341,12 @@ export function handleLoss() {
             gamesPlayed: state.stats.gamesPlayed + 1
         }
     }));
+    
+    updateAdvancedStats(mode, difficulty, false, lossTime, numGuesses, score);
+    
+    const experienceEarned = calculateExperience(false, score, difficulty, numGuesses, lossTime);
+    updateRanking(experienceEarned);
+    
     updateDailyStats(false);
 
     if (state.gameMode === 'daily') {
@@ -404,7 +469,7 @@ export function handleStreakWin() {
 }
 
 export function handleStreakLoss() {
-    const state = getGameState();
+    let state = getGameState();
     
     if (!state.stats.streak) {
         setGameState(state => ({
@@ -414,9 +479,10 @@ export function handleStreakLoss() {
                 streak: { current: 0, max: 0, gamesPlayed: 0, gamesWon: 0, bestStreak: 0 }
             }
         }));
+        state = getGameState();
     }
     
-    if (state.streakCurrent > state.stats.streak.bestStreak) {
+    if (state.streakCurrent > ((state.stats.streak && state.stats.streak.bestStreak) || 0)) {
         setGameState(state => ({
             ...state,
             stats: {
@@ -428,6 +494,25 @@ export function handleStreakLoss() {
             }
         }));
     }
+    
+    // Show enhanced Game Over screen
+    import('./ui.js').then(mod => {
+        mod.showEnhancedGameOverScreen({
+            score: 0,
+            winTime: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : 0,
+            numGuesses: state.guessHistory.length,
+            achievements: [],
+            win: false,
+            mode: state.gameMode,
+            difficulty: state.difficulty,
+            usedHelp: state.usedHelp,
+            targetNumber: state.currentNumber,
+            guessHistory: state.guessHistory || [],
+            minRange: state.minRange,
+            maxRange: state.maxRange,
+            scoreDetails: null
+        });
+    });
     
     return {
         type: 'error',
@@ -590,14 +675,9 @@ export function startNewGame() {
     });
     if (window.updateUI) window.updateUI();
     const state = getGameState();
-    if (state.gameMode === 'daily') {
-        const result = getDailyResult();
-        if (result) {
-            return { type: 'daily_already_played', result };
-        }
-    }
     const newNumber = generateNumber();
     setGameState(state => ({ ...state, currentNumber: newNumber, guessHistory: [] }));
+    const updatedState = getGameState();
     updateDifficultySettings();
     return { type: 'new_game', number: newNumber };
 }
@@ -627,15 +707,20 @@ export function startChaosTimer() {
             clearInterval(chaosInterval);
             const lossResult = handleLoss();
             import('./ui.js').then(mod => {
-                mod.showEndGameSummary({
+                const state = getGameState();
+                mod.showEnhancedGameOverScreen({
                     score: 0,
                     winTime: 15,
                     numGuesses: 0,
                     achievements: [],
                     win: false,
                     mode: 'chaos',
-                    difficulty: getGameState().difficulty,
+                    difficulty: state.difficulty,
                     usedHelp: false,
+                    targetNumber: state.currentNumber,
+                    guessHistory: state.guessHistory || [],
+                    minRange: state.minRange,
+                    maxRange: state.maxRange,
                     scoreDetails: null
                 });
             });
@@ -690,7 +775,25 @@ export function startDoubleChaosTimer() {
         const currentState = getGameState();
         if (currentState.attemptsLeft <= 0) {
             if (window.updateUI) window.updateUI();
-            handleLoss();
+            const lossResult = handleLoss();
+            import('./ui.js').then(mod => {
+                const state = getGameState();
+                mod.showEnhancedGameOverScreen({
+                    score: 0,
+                    winTime: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : 0,
+                    numGuesses: state.guessHistory ? state.guessHistory.length : 0,
+                    achievements: [],
+                    win: false,
+                    mode: state.gameMode,
+                    difficulty: state.difficulty,
+                    usedHelp: state.usedHelp,
+                    targetNumber: state.currentNumber,
+                    guessHistory: state.guessHistory || [],
+                    minRange: state.minRange,
+                    maxRange: state.maxRange,
+                    scoreDetails: null
+                });
+            });
             return;
         }
         let fullMin = 1, fullMax = 200, attempts = 12;
@@ -802,15 +905,20 @@ export function handleBlitzTimeout() {
     if (submitGuess) submitGuess.disabled = true;
     if (helpButton) helpButton.disabled = true;
     import('./ui.js').then(mod => {
-        mod.showEndGameSummary({
+        const state = getGameState();
+        mod.showEnhancedGameOverScreen({
             score: 0,
             winTime: BLITZ_TIME_SEC,
             numGuesses: 0,
             achievements: [],
             win: false,
             mode: 'blitz',
-            difficulty: getGameState().difficulty,
+            difficulty: state.difficulty,
             usedHelp: false,
+            targetNumber: state.currentNumber,
+            guessHistory: state.guessHistory || [],
+            minRange: state.minRange,
+            maxRange: state.maxRange,
             scoreDetails: null
         });
     });
@@ -914,11 +1022,24 @@ export function breakTheBotTakeTurn() {
         if (guessInput) guessInput.disabled = true;
         if (submitGuess) submitGuess.disabled = true;
         if (helpButton) helpButton.disabled = true;
-        setTimeout(() => {
-            import('./ui.js').then(mod => {
-                mod.startNewGame();
+        import('./ui.js').then(mod => {
+            const state = getGameState();
+            mod.showEnhancedGameOverScreen({
+                score: 0,
+                winTime: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : 0,
+                numGuesses: state.guessHistory ? state.guessHistory.length : 0,
+                achievements: [],
+                win: false,
+                mode: state.gameMode,
+                difficulty: state.difficulty,
+                usedHelp: state.usedHelp,
+                targetNumber: state.currentNumber,
+                guessHistory: state.guessHistory || [],
+                minRange: state.minRange,
+                maxRange: state.maxRange,
+                scoreDetails: null
             });
-        }, 3000);
+        });
         return { type: 'bot_won', guess: botGuess };
     }
     setGameState(state => ({ ...state, botTurn: false }));
@@ -1038,4 +1159,36 @@ export function startNextStreakRound() {
         achievementsEarnedThisRound: [],
         guessHistory: []
     }));
+}
+
+/**
+ * Check if the current game was perfect (1 guess, no hints, under 5 seconds)
+ * @param {number} numGuesses 
+ * @param {number} winTime 
+ * @param {boolean} usedHelp 
+ * @returns {boolean} 
+ */
+export function isPerfectGame(numGuesses, winTime, usedHelp) {
+    return numGuesses === 1 && !usedHelp && winTime < 5;
+}
+
+/**
+ * Update perfect games counter if the game was perfect
+ * @param {number} numGuesses 
+ * @param {number} winTime 
+ * @param {boolean} usedHelp 
+ */
+export function updatePerfectGamesCounter(numGuesses, winTime, usedHelp) {
+    const isPerfect = isPerfectGame(numGuesses, winTime, usedHelp);
+    if (isPerfect) {
+        const state = getGameState();
+        setGameState(state => ({
+            stats: {
+                ...state.stats,
+                perfectGames: (state.stats.perfectGames || 0) + 1
+            }
+        }));
+        return true;
+    }
+    return false;
 } 

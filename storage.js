@@ -5,10 +5,8 @@
  */
 export function getItem(key) {
     try {
-        // Return raw string for theme, player name, and welcome completion
         if (key === 'guessRushTheme' || key === 'guessRushPlayerName' || key === 'guessRushWelcomeCompleted') {
             const value = localStorage.getItem(key);
-            // For welcome completion, convert string to boolean
             if (key === 'guessRushWelcomeCompleted') {
                 return value === 'true';
             }
@@ -16,7 +14,6 @@ export function getItem(key) {
         }
         return JSON.parse(localStorage.getItem(key));
     } catch (e) {
-        // Optionally, show user feedback if available
         if (typeof window !== 'undefined' && window.displayFeedbackMessage) {
             window.displayFeedbackMessage('Could not load data from storage.', 'error');
         }
@@ -33,7 +30,6 @@ export function getItem(key) {
  */
 export function setItem(key, value) {
     try {
-        // Store theme, player name, and welcome completion as strings
         if (key === 'guessRushTheme' || key === 'guessRushPlayerName' || key === 'guessRushWelcomeCompleted') {
             localStorage.setItem(key, String(value));
         } else {
@@ -50,7 +46,7 @@ export function setItem(key, value) {
 }
 
 /**
- * Safe localStorage remove
+ * Safe localStorage remove.    
  * @param {string} key
  * @returns {boolean}
  */

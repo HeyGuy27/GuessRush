@@ -38,7 +38,90 @@ const _gameState = {
             lastWinDate: null
         },
         totalScore: 0,
-        modesWon: {}
+        modesWon: {},
+        perfectGames: 0,
+        personalBests: {
+            classic: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            chaos: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            math: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            daily: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            blitz: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            bot: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            breakthebot: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            doublechaos: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            streak: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            sudden: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 },
+            reverse: { bestScore: Infinity, bestTime: Infinity, bestEfficiency: 0 }
+        },
+        advancedStats: {
+            classic: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            chaos: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            math: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            blitz: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            bot: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            breakthebot: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            doublechaos: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            streak: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            sudden: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            },
+            reverse: {
+                easy: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                medium: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                hard: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 },
+                chaos: { gamesPlayed: 0, gamesWon: 0, totalTime: 0, totalAttempts: 0, totalScore: 0 }
+            }
+        },
+        ranking: {
+            currentLevel: 1,
+            currentTitle: 'Novice',
+            totalExperience: 0,
+            levelThresholds: [0, 100, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000],
+            titles: ['Novice', 'Apprentice', 'Explorer', 'Strategist', 'Mastermind', 'Virtuoso', 'Legend', 'Mythic', 'Divine', 'Transcendent']
+        }
     },
     botGuesses: new Set(),
     botWon: false,
@@ -88,7 +171,6 @@ export function setGameState(updater) {
     } else if (typeof updater === 'object') {
         Object.assign(_gameState, updater);
     }
-    // Ensure achievements is always a Set
     if (!(_gameState.achievements instanceof Set)) {
         try {
             _gameState.achievements = new Set(

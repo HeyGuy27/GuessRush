@@ -30,6 +30,7 @@ export const achievementDescriptions = {
     'Master of Mayhem': 'Win Double Chaos on hard Difficulty',
     'Lord of the Double Chaos': 'Win Double Chaos on chaos',
     'Total Wins': 'Win games to unlock higher tiers',
+    'Perfect Game': 'Win in 1 guess, no hints, under 5 seconds',
 };
 
 export const tieredAchievements = {
@@ -134,6 +135,12 @@ export const tieredAchievements = {
     ],
     'Lord of the Double Chaos': [
         { tier: 'platinum', condition: (mode, diff) => mode === 'doublechaos' && diff === 'chaos', description: 'Win Double Chaos on chaos' }
+    ],
+    'Perfect Game': [
+        { tier: 'bronze', condition: (perfectGames) => perfectGames >= 1, description: 'Achieve 1 perfect game' },
+        { tier: 'silver', condition: (perfectGames) => perfectGames >= 3, description: 'Achieve 3 perfect games' },
+        { tier: 'gold', condition: (perfectGames) => perfectGames >= 5, description: 'Achieve 5 perfect games' },
+        { tier: 'platinum', condition: (perfectGames) => perfectGames >= 10, description: 'Achieve 10 perfect games!' }
     ],
 };
 

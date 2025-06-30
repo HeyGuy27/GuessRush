@@ -363,6 +363,156 @@
       </div>
     </div>
 
+    <!-- Enhanced Victory Screen Modal -->
+    <div id="victoryScreenModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="victoryScreenTitle">
+      <div class="modal-content victory-screen-content" style="min-width:320px;max-width:90vw;">
+        <div id="playerInfoLineVictory" class="player-info-line" style="display:flex;align-items:center;gap:0.7em;margin-bottom:0.5em;"></div>
+        <div id="personalizedFeedbackVictory" class="personalized-feedback" style="text-align:center;margin-bottom:0.8em;font-size:1.1em;font-weight:500;color:#555;"></div>
+        <div class="victory-header">
+          <h2 id="victoryScreenTitle">🎉 Victory! 🎉</h2>
+          <div id="victorySubtitle" class="victory-subtitle"></div>
+        </div>
+        
+        <!-- Perfect Game Indicator -->
+        <div id="perfectGameIndicator" class="perfect-game-indicator hidden">
+          <div class="perfect-game-icon">⭐</div>
+          <div class="perfect-game-text">
+            <div class="perfect-game-title">Perfect Game!</div>
+            <div class="perfect-game-count">Perfect Games: <span id="perfectGamesCount">0</span></div>
+          </div>
+        </div>
+        
+        <!-- Combined Stats & Achievements -->
+        <div class="victory-main-content">
+          <!-- Game Stats -->
+          <div class="score-summary-card">
+            <div class="victory-stats">
+              <div class="stat-row">
+                <span class="stat-label">Score:</span>
+                <span class="stat-value score-pop" id="victoryScore">0</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Time:</span>
+                <span class="stat-value" id="victoryTime">0 sec</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Guesses:</span>
+                <span class="stat-value" id="victoryGuesses">0</span>
+              </div>
+            </div>
+          </div>
+          <div id="selfComparisonVictory" class="self-comparison-panel" style="margin-top:0.2em;margin-bottom:0.5em;"></div>
+          <div id="nearAchievementVictory" class="near-achievement-panel" style="margin-bottom:0.5em;"></div>
+          
+          <!-- Achievements Section -->
+          <div class="victory-achievements">
+            <h3>Achievements Unlocked</h3>
+            <div id="victoryAchievementsList" class="achievements-list-victory"></div>
+            <div id="nextAchievementHint" class="next-achievement-hint hidden">
+              <div class="hint-icon">💡</div>
+              <div class="hint-text">Next: <span id="nextAchievementText"></span></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sharing Section -->
+        <div class="victory-sharing">
+          <div class="share-buttons">
+            <button id="shareWhatsApp" class="share-btn whatsapp-btn">
+              <span class="share-icon">📱</span>
+              WhatsApp
+            </button>
+            <button id="shareFacebook" class="share-btn facebook-btn">
+              <span class="share-icon">📘</span>
+              Facebook
+            </button>
+            <button id="copyResult" class="share-btn copy-btn">
+              <span class="share-icon">📋</span>
+              Copy
+            </button>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="victory-actions">
+          <button id="victoryPlayAgain" class="victory-btn primary">Play Again</button>
+          <button id="victoryClose" class="victory-btn secondary">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhanced Game Over Screen Modal -->
+    <div id="gameOverScreenModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="gameOverScreenTitle">
+      <div class="modal-content game-over-screen-content" style="min-width:320px;max-width:90vw;">
+        <div id="playerInfoLineGameOver" class="player-info-line" style="display:flex;align-items:center;gap:0.7em;margin-bottom:0.5em;"></div>
+        <div id="personalizedFeedbackGameOver" class="personalized-feedback" style="text-align:center;margin-bottom:0.8em;font-size:1.1em;font-weight:500;color:#555;"></div>
+        <div class="game-over-header">
+          <h2 id="gameOverScreenTitle" class="game-over-title">💀 Game Over 💀</h2>
+          <div id="gameOverSubtitle" class="game-over-subtitle"></div>
+        </div>
+        
+        <!-- Target Number Reveal -->
+        <div class="target-number-reveal">
+          <div class="target-label">The number was:</div>
+          <div id="targetNumber" class="target-number">?</div>
+        </div>
+        
+        <!-- Game Stats -->
+        <div class="score-summary-card">
+          <div class="game-over-stats">
+            <div class="stat-row">
+              <span class="stat-label">Attempts:</span>
+              <span class="stat-value" id="gameOverAttempts">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Time:</span>
+              <span class="stat-value" id="gameOverTime">0 sec</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Mode:</span>
+              <span class="stat-value" id="gameOverMode">Classic</span>
+            </div>
+          </div>
+        </div>
+        <div id="selfComparisonGameOver" class="self-comparison-panel" style="margin-top:0.2em;margin-bottom:0.5em;"></div>
+        <div id="nearAchievementGameOver" class="near-achievement-panel" style="margin-bottom:0.5em;"></div>
+        
+        <!-- Near Miss Analysis -->
+        <div id="nearMissAnalysis" class="near-miss-analysis hidden">
+          <div class="near-miss-icon">🎯</div>
+          <div class="near-miss-content">
+            <div class="near-miss-title">Close Call!</div>
+            <div id="nearMissText" class="near-miss-text"></div>
+            <div class="near-miss-tip">💡 Tip: Try narrowing down your range more efficiently!</div>
+          </div>
+        </div>
+        
+        <!-- Defeat Sharing -->
+        <div class="defeat-sharing">
+          <div class="share-buttons">
+            <button id="shareDefeatWhatsApp" class="share-btn whatsapp-btn">
+              <span class="share-icon">📱</span>
+              Share Loss
+            </button>
+            <button id="shareDefeatFacebook" class="share-btn facebook-btn">
+              <span class="share-icon">📘</span>
+              Share Loss
+            </button>
+            <button id="copyDefeatResult" class="share-btn copy-btn">
+              <span class="share-icon">📋</span>
+              Copy
+            </button>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="game-over-actions">
+          <button id="gameOverPlayAgain" class="game-over-btn primary">Try Again</button>
+          <button id="gameOverClose" class="game-over-btn secondary">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Scripts -->
     <script type="module" src="main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>

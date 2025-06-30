@@ -2,6 +2,15 @@
 
 An interactive number guessing game that challenges your intuition and quick thinking! Play across multiple game modes, unlock tiered achievements, and track your stats in a modern, responsive UI.
 
+---
+## 🚀 Recent UI & Logic Improvements 
+- **Personal Stats Overhaul:** Stats modal now features tabs (General, Personal Bests, Mode Stats, Daily Challenge) for a cleaner, more organized layout.
+- **Personal Bests Cards:** Modern, compact cards with icons, gradients, and hover effects. Missing values handled gracefully.
+- **Player Rank Display:** Rank ("Apprentice" , e.g) is now highly visible, with XP progress and next rank info.
+- **Robust Stats Logic:** Handles missing/null stats, always shows default values instead of errors, and saves best score/time correctly.
+- **Input Validation:** Guesses outside the allowed range are blocked and show a clear error message (no more accidental Game Over).
+- **Debug Logs:** All debug logs removed for a clean console.
+- **Stat Cards:** Brighter background for better readability and accessibility.
 
 ---
 
@@ -70,6 +79,7 @@ All game modes (except Streak, Sudden Death, Double Chaos) support difficulty se
 - **Achievements Panel**: View all achievements, their status, icons, and descriptions in a dedicated modal
 - **Pop-up notifications**: Achievements now unlock and display correctly, including pop-ups.
 - **Animated achievement popups and modal highlights for new achievements.**
+ **Note:** Achievements cannot be earned in Practice mode.
 
 ## 🌐 Features
 - Theme selector: Light, Dark, Neon, Pastel

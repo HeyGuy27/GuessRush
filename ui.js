@@ -1126,6 +1126,12 @@ function handleGuess() {
         if (window.updateUI) window.updateUI();
     }
     if (result) {
+        if (result.continueStreak) {
+            elements.guessInput.value = '';
+            displayFeedbackMessage(result.message, 'success');
+            updateUI();
+            return;
+        }
         if (result.type === 'success' || (result.type === 'error' && !(result.message && result.message.includes('valid number between')))) {
             const achievements = state.achievementsEarnedThisRound || [];
             let multiplier = 1;
@@ -1153,25 +1159,31 @@ function handleGuess() {
                 }
             };
             if (result.type === 'success') {
-                showEnhancedVictoryScreen(gameData);
-                showShareResultBtn(true, {
-                    win: true,
-                    numGuesses: result.numGuesses,
-                    mode: result.mode,
-                    time: result.winTime
-                });
+                if (!result.continueStreak) {
+                    showEnhancedVictoryScreen(gameData);
+                    showShareResultBtn(true, {
+                        win: true,
+                        numGuesses: result.numGuesses,
+                        mode: result.mode,
+                        time: result.winTime
+                    });
+                }
             } else if (result.type === 'error') {
-                showEnhancedGameOverScreen(gameData);
-                showShareResultBtn(true, {
-                    win: false,
-                    numGuesses: result.numGuesses,
-                    mode: result.mode,
-                    time: result.time
-                });
+                if (!result.continueStreak) {
+                    showEnhancedGameOverScreen(gameData);
+                    showShareResultBtn(true, {
+                        win: false,
+                        numGuesses: result.numGuesses,
+                        mode: result.mode,
+                        time: result.time
+                    });
+                }
             }
-            setTimeout(() => {
-                startNewGame();
-            }, 3000);
+            if (!result.continueStreak) {
+                setTimeout(() => {
+                    startNewGame();
+                }, 3000);
+            }
         }
     }
     if (state.gameMode === 'doublechaos') {
@@ -1248,17 +1260,32 @@ function updateDifficultyDropdownForMode(gameMode) {
     const diffSelect = elements.difficulty;
     if (!diffSelect) return;
     if (gameMode === 'streak') {
-        diffSelect.innerHTML = '<option value="master">Master</option>';
-        diffSelect.value = 'master';
-    } else if (gameMode === 'doublechaos') {
-        diffSelect.innerHTML = `
-            <option value="easy">Easy (1-200)</option>
-            <option value="medium">Medium (1-400)</option>
-            <option value="hard">Hard (1-600)</option>
-            <option value="chaos">Chaos (1-1000)</option>
-        `;
-        diffSelect.value = 'easy';
+        diffSelect.style.display = 'none';
+        let masterLabel = document.getElementById('masterDiffLabel');
+        if (!masterLabel) {
+            masterLabel = document.createElement('div');
+            masterLabel.id = 'masterDiffLabel';
+            masterLabel.style.display = 'flex';
+            masterLabel.style.alignItems = 'center';
+            masterLabel.style.gap = '0.5em';
+            masterLabel.style.background = diffSelect.style.background || '#17213a';
+            masterLabel.style.border = diffSelect.style.border || '2px solid #3ec6ff';
+            masterLabel.style.borderRadius = diffSelect.style.borderRadius || '10px';
+            masterLabel.style.padding = diffSelect.style.padding || '0.7em 1.2em';
+            masterLabel.style.fontSize = diffSelect.style.fontSize || '1.1em';
+            masterLabel.style.fontWeight = 'bold';
+            masterLabel.style.color = diffSelect.style.color || '#7fd0ff';
+            masterLabel.style.marginTop = diffSelect.style.marginTop || '0px';
+            masterLabel.style.height = diffSelect.offsetHeight ? diffSelect.offsetHeight + 'px' : 'auto';
+            masterLabel.style.minWidth = diffSelect.offsetWidth ? diffSelect.offsetWidth + 'px' : '180px';
+            masterLabel.tabIndex = 0;
+            diffSelect.parentElement.appendChild(masterLabel);
+        }
+        masterLabel.innerHTML = '<span style="font-size:1.2em;">🏆</span> MASTER';
     } else {
+        diffSelect.style.display = '';
+        const masterLabel = document.getElementById('masterDiffLabel');
+        if (masterLabel) masterLabel.remove();
         diffSelect.innerHTML = `
             <option value="easy">Easy (1-100)</option>
             <option value="medium">Medium (1-250)</option>

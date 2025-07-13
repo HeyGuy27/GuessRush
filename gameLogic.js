@@ -382,9 +382,6 @@ export function handleStreakWin() {
         }));
         state = getGameState();
     }
-
-    if (!state.streakCurrent) setGameState(state => ({ ...state, streakCurrent: 0 }));
-    if (!state.streakMaxRange) setGameState(state => ({ ...state, streakMaxRange: 100 }));
     
     setGameState(state => ({
         ...state,
@@ -460,6 +457,8 @@ export function handleStreakWin() {
         attemptsLeft: state.maxAttempts - 1
     }));
     
+    startNextStreakRound();
+    
     const updatedState = getGameState();
     return {
         type: 'success',
@@ -495,24 +494,25 @@ export function handleStreakLoss() {
         }));
     }
     
-    // Show enhanced Game Over screen
-    import('./ui.js').then(mod => {
-        mod.showEnhancedGameOverScreen({
-            score: 0,
-            winTime: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : 0,
-            numGuesses: state.guessHistory.length,
-            achievements: [],
-            win: false,
-            mode: state.gameMode,
-            difficulty: state.difficulty,
-            usedHelp: state.usedHelp,
-            targetNumber: state.currentNumber,
-            guessHistory: state.guessHistory || [],
-            minRange: state.minRange,
-            maxRange: state.maxRange,
-            scoreDetails: null
+    setTimeout(() => {
+        import('./ui.js').then(mod => {
+            mod.showEnhancedGameOverScreen({
+                score: 0,
+                winTime: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : 0,
+                numGuesses: state.guessHistory.length,
+                achievements: [],
+                win: false,
+                mode: state.gameMode,
+                difficulty: state.difficulty,
+                usedHelp: state.usedHelp,
+                targetNumber: state.currentNumber,
+                guessHistory: state.guessHistory || [],
+                minRange: state.minRange,
+                maxRange: state.maxRange,
+                scoreDetails: null
+            });
         });
-    });
+    }, 2000);
     
     return {
         type: 'error',

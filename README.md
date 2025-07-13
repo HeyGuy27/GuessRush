@@ -4,12 +4,14 @@ An interactive number guessing game that challenges your intuition and quick thi
 
 ---
 ## 🚀 Recent UI & Logic Improvements 
+- **Streak Mode Polished:** Streak mode now works as a true streak challenge: after each correct guess, the game continues automatically to the next round (range increases by 50, attempts decrease by 1). Only after 12 consecutive wins do you see the victory screen. If you run out of attempts before 12, you lose.
+- **Difficulty UI:** In Streak mode, the difficulty dropdown is replaced with a styled "MASTER" label for clarity and better UX.
+- **Cleaner Console:** All debug logs and console outputs have been removed for a clean production experience.
 - **Personal Stats Overhaul:** Stats modal now features tabs (General, Personal Bests, Mode Stats, Daily Challenge) for a cleaner, more organized layout.
 - **Personal Bests Cards:** Modern, compact cards with icons, gradients, and hover effects. Missing values handled gracefully.
 - **Player Rank Display:** Rank ("Apprentice" , e.g) is now highly visible, with XP progress and next rank info.
 - **Robust Stats Logic:** Handles missing/null stats, always shows default values instead of errors, and saves best score/time correctly.
 - **Input Validation:** Guesses outside the allowed range are blocked and show a clear error message (no more accidental Game Over).
-- **Debug Logs:** All debug logs removed for a clean console.
 - **Stat Cards:** Brighter background for better readability and accessibility.
 
 ---
@@ -49,7 +51,7 @@ GuessRush is a modern number guessing game with innovative features: mathematica
 - **Chaos**: The target number changes every 15 seconds—timer starts after your first guess.
 - **Math Training**: Get mathematical hints to help you guess.
 - **Daily Challenge**: A new challenge every day for all players.
-- **Streak**: Guess correctly 12 times in a row, with the range increasing and attempts decreasing each round.
+- **Streak**: Guess correctly 12 times in a row. After each win, the range increases by 50 and attempts decrease by 1. Only after 12 consecutive wins do you win the streak. If you run out of attempts, you lose.
 - **Reverse**: Hot/Cold hints are reversed.
 - **Blitz**: Only 30 seconds to guess the number. Timer starts after your first guess. Win fast for special achievements!
 - **Sudden Death**: Only one attempt—range changes by difficulty.
@@ -104,6 +106,8 @@ All game modes (except Streak, Sudden Death, Double Chaos) support difficulty se
 - **New:** Accessibility and keyboard navigation improvements for modals and game controls.
 - **New:** Robust state-driven timer logic for reliability.
 - **New:** Bug fixes for timer, modal, and UI reset logic.
+- **Streak Mode UX:** No victory modal after each round—only after 12 wins in a row. Immediate feedback and smooth transition to the next round.
+- **Difficulty Selector:** In Streak mode, the difficulty selector is hidden and replaced with a "MASTER" badge.
 
 ## 💯 Scoring System
 - Each win starts with a base score of **1000 points**.

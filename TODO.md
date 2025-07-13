@@ -15,6 +15,11 @@
 - Code cleanup: all debug logs removed, improved maintainability.
 - Refactor code into modules for better maintainability (achievements, stats, UI, themes, game modes, helpers)
 - Add more achievement popups and polish achievement panel
+- [x] Streak mode now continues automatically after each win, only showing the victory screen after 12 consecutive wins.
+- [x] In Streak mode, the difficulty dropdown is replaced with a styled "MASTER" label.
+- [x] Removed all debug console logs for a clean production experience.
+- [x] Fixed: No more victory modal after each round in Streak mode—only after 12 wins in a row.
+- [x] Improved feedback and UI flow for Streak mode.
 
 ## 🚀 High Priority
 - [ ] Further polish for stat cards (color themes, accessibility, mobile)

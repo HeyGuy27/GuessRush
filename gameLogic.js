@@ -1,4 +1,4 @@
-import { getGameState, setGameState, _internalGameState } from './state.js';
+import { getGameState, setGameState, _internalGameState, getCurrentNumber } from './state.js';
 import { unlockAchievement, tieredAchievements } from './achievements.js';
 import { getItem, setItem } from './storage.js';
 import { CHAOS_INTERVAL_MS, BLITZ_TIME_SEC } from './config.js';
@@ -10,6 +10,7 @@ import {
     calculateExperience, 
     calculateEfficiency 
 } from './statsManager.js';
+import { evaluateEasterEggs, resetEasterEggTracking } from './easterEggs.js';
 
 /**
  * Handle a player guess, including validation, feedback, and state updates.
@@ -48,7 +49,10 @@ export function handleGuess() {
     if (guess < state.minRange || guess > state.maxRange) {
         return { type: 'error', message: `Please enter a valid number between ${state.minRange} and ${state.maxRange}.` };
     }
-    const number = state.currentNumber;
+    const number = getCurrentNumber();
+    
+    // Calculate attempt number before decrement
+    const attemptNumber = state.maxAttempts - state.attemptsLeft + 1;
     const min = state.minRange;
     const max = state.maxRange;
     const range = max - min;
@@ -69,6 +73,16 @@ export function handleGuess() {
                 totalAttempts: state.stats.totalAttempts + 1
             }
         }));
+    }
+    
+    // Evaluate easter eggs before processing the guess result
+    const isWin = guess === number;
+    const easterEggMessage = evaluateEasterEggs(guess, number, isWin, attemptNumber, state.usedHelp);
+    if (easterEggMessage) {
+        // Import showEasterEgg dynamically to avoid circular dependencies
+        import('./ui.js').then(mod => {
+            mod.showEasterEgg(easterEggMessage);
+        });
     }
     
     let guessType = '';
@@ -100,6 +114,7 @@ export function handleGuess() {
                 guessType = 'hot';
             } else {
                 feedback = direction ? `Try ${direction}!` : 'Try again!';
+                guessType = 'neutral';
             }
         } else {
             if (diff <= 5) {
@@ -110,11 +125,16 @@ export function handleGuess() {
                 feedback = direction ? `Cold! Try ${direction}!` : 'Cold!';
                 cold = true;
                 guessType = 'cold';
+            } else if (diff > 10 && diff <= 25) {
+                feedback = direction ? `Try ${direction}!` : 'Try again!';
+                guessType = 'neutral';
             } else if (state.gameMode === 'math') {
                 const mathHint = getMathHint(number);
                 feedback = direction ? `${mathHint}. Try ${direction}!` : mathHint;
+                guessType = 'neutral';
             } else {
                 feedback = direction ? `Try ${direction}!` : 'Try again!';
+                guessType = 'neutral';
             }
         }
         const newState = getGameState();
@@ -154,7 +174,7 @@ export function handleGuess() {
             }
         }
     }
-    return { type: 'hint', message: feedback, hot, cold };
+    return { type: 'hint', message: feedback, hot, cold, guessType };
 }
 
 export function handleWin() {
@@ -300,7 +320,7 @@ export function handleWin() {
         const result = {
             win: true,
             attempts: numGuesses,
-            number: realState.currentNumber,
+            number: getCurrentNumber(),
             time: winTime
         };
         saveDailyResult(result);
@@ -353,7 +373,7 @@ export function handleLoss() {
         const result = {
             win: false,
             attempts: state.maxAttempts,
-            number: state.currentNumber,
+            number: getCurrentNumber(),
             time: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : null
         };
         saveDailyResult(result);
@@ -362,7 +382,7 @@ export function handleLoss() {
 
     return {
         type: 'error',
-        message: `Game Over! The number was ${state.currentNumber}`,
+        message: `Game Over! The number was ${getCurrentNumber()}`,
         numGuesses: getGameState().guessHistory.length,
         mode: state.gameMode,
         time: state.startTime ? Math.round((Date.now() - state.startTime) / 1000) : null
@@ -505,7 +525,7 @@ export function handleStreakLoss() {
                 mode: state.gameMode,
                 difficulty: state.difficulty,
                 usedHelp: state.usedHelp,
-                targetNumber: state.currentNumber,
+                targetNumber: getCurrentNumber(),
                 guessHistory: state.guessHistory || [],
                 minRange: state.minRange,
                 maxRange: state.maxRange,
@@ -528,8 +548,8 @@ export function handleHelp() {
     
     const range = state.maxRange - state.minRange;
     const hintRange = Math.floor(range * 0.2);
-    const lowerBound = Math.max(state.minRange, state.currentNumber - hintRange);
-    const upperBound = Math.min(state.maxRange, state.currentNumber + hintRange);
+    const lowerBound = Math.max(state.minRange, getCurrentNumber() - hintRange);
+    const upperBound = Math.min(state.maxRange, getCurrentNumber() + hintRange);
     
     setGameState(state => ({
         ...state,
@@ -547,13 +567,15 @@ export function handleHelp() {
 
 export function generateNumber() {
     const state = getGameState();
+    let targetNumber;
     if (state.gameMode === 'daily') {
-        return generateDailyNumber();
+        targetNumber = generateDailyNumber();
+    } else if (state.gameMode === 'streak') {
+        targetNumber = Math.floor(Math.random() * (state.streakMaxRange - state.minRange + 1)) + state.minRange;
+    } else {
+        targetNumber = Math.floor(Math.random() * (state.maxRange - state.minRange + 1)) + state.minRange;
     }
-    if (state.gameMode === 'streak') {
-        return Math.floor(Math.random() * (state.streakMaxRange - state.minRange + 1)) + state.minRange;
-    }
-    return Math.floor(Math.random() * (state.maxRange - state.minRange + 1)) + state.minRange;
+    return targetNumber;
 }
 
 export function generateDailyNumber() {
@@ -677,6 +699,7 @@ export function startNewGame() {
     const state = getGameState();
     const newNumber = generateNumber();
     setGameState(state => ({ ...state, currentNumber: newNumber, guessHistory: [] }));
+    resetEasterEggTracking();
     const updatedState = getGameState();
     updateDifficultySettings();
     return { type: 'new_game', number: newNumber };
@@ -717,7 +740,7 @@ export function startChaosTimer() {
                     mode: 'chaos',
                     difficulty: state.difficulty,
                     usedHelp: false,
-                    targetNumber: state.currentNumber,
+                    targetNumber: getCurrentNumber(),
                     guessHistory: state.guessHistory || [],
                     minRange: state.minRange,
                     maxRange: state.maxRange,
@@ -787,7 +810,7 @@ export function startDoubleChaosTimer() {
                     mode: state.gameMode,
                     difficulty: state.difficulty,
                     usedHelp: state.usedHelp,
-                    targetNumber: state.currentNumber,
+                    targetNumber: getCurrentNumber(),
                     guessHistory: state.guessHistory || [],
                     minRange: state.minRange,
                     maxRange: state.maxRange,
@@ -915,8 +938,8 @@ export function handleBlitzTimeout() {
             mode: 'blitz',
             difficulty: state.difficulty,
             usedHelp: false,
-            targetNumber: state.currentNumber,
-            guessHistory: state.guessHistory || [],
+                    targetNumber: getCurrentNumber(),
+                    guessHistory: state.guessHistory || [],
             minRange: state.minRange,
             maxRange: state.maxRange,
             scoreDetails: null
@@ -933,7 +956,7 @@ export function breakTheBotTakeTurn() {
     const guessed = state.botGuessedNumbers instanceof Set ? state.botGuessedNumbers : new Set(state.botGuessedNumbers || []);
     const min = state.minRange;
     const max = state.maxRange;
-    const number = state.currentNumber;
+    const number = getCurrentNumber();
     let intendedGuess = null;
     function getAvailableNumbers() {
         const arr = [];
@@ -1033,8 +1056,8 @@ export function breakTheBotTakeTurn() {
                 mode: state.gameMode,
                 difficulty: state.difficulty,
                 usedHelp: state.usedHelp,
-                targetNumber: state.currentNumber,
-                guessHistory: state.guessHistory || [],
+                    targetNumber: getCurrentNumber(),
+                    guessHistory: state.guessHistory || [],
                 minRange: state.minRange,
                 maxRange: state.maxRange,
                 scoreDetails: null

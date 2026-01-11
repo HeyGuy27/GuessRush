@@ -1,8 +1,12 @@
-/**
- * Game state encapsulation and accessors
- */
+// Secure variable to store the current number, not accessible via window object
+let secureCurrentNumber = null;
+
+export function getCurrentNumber() {
+    return secureCurrentNumber;
+}
+
 const _gameState = {
-    currentNumber: null,
+    // currentNumber is removed from here to prevent console cheating
     attemptsLeft: 0,
     maxAttempts: 12,
     minRange: 1,
@@ -138,12 +142,23 @@ const _gameState = {
     lastRoundAchievements: [],
     blitzStarted: false,
     guessHistory: [],
+    easterEggs: {
+        guessTimestamps: [],
+        consecutiveFirstGuessWins: 0,
+        gamesPlayedWithoutHints: 0,
+        lastThreeGuessesDistances: [],
+        recentGuessesWithoutHints: 0,
+        consecutiveFastGuesses: 0,
+        lastFastGuessTime: null,
+        consecutiveBoundaryGuesses: 0,
+        lastBoundaryGuess: null,
+        recentWinGuesses: [],
+        consecutiveFarGuessesWithoutHints: 0,
+        lastTriggeredEgg: null,
+        hasTriggeredMetaGuess: false
+    },
 };
 
-/**
- * Get a deep clone of the game state (read-only)
- * @returns {object}
- */
 export function getGameState() {
     const clone = JSON.parse(JSON.stringify(_gameState));
     if (Array.isArray(clone.botGuessedNumbers)) {
@@ -160,16 +175,21 @@ export function getGameState() {
     return clone;
 }
 
-/**
- * Update the game state via a partial object or updater function
- * @param {Object|Function} updater
- */
 export function setGameState(updater) {
     if (typeof updater === 'function') {
         const newState = updater(getGameState());
+        if (newState.hasOwnProperty('currentNumber')) {
+            secureCurrentNumber = newState.currentNumber;
+            delete newState.currentNumber;
+        }
         Object.assign(_gameState, newState);
     } else if (typeof updater === 'object') {
-        Object.assign(_gameState, updater);
+        const newState = { ...updater };
+        if (newState.hasOwnProperty('currentNumber')) {
+            secureCurrentNumber = newState.currentNumber;
+            delete newState.currentNumber;
+        }
+        Object.assign(_gameState, newState);
     }
     if (!(_gameState.achievements instanceof Set)) {
         try {
@@ -191,10 +211,6 @@ export function setGameState(updater) {
     }
 }
 
-/**
- * Direct internal access for modules that need to mutate state (not for external use)
- * @returns {object}
- */
 export function _internalGameState() {
     return _gameState;
 } 

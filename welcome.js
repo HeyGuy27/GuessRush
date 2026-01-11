@@ -169,7 +169,7 @@ function handleTutorialGuess() {
             color = '#fd7e14';
         } else {
             feedback = '❄️ COLD! Try a different number.';
-            color = '#007bff';
+            color = '#3b82f6';
         }
     } else {
         if (difference < previousDistance) {
@@ -177,7 +177,7 @@ function handleTutorialGuess() {
             color = '#fd7e14';
         } else if (difference > previousDistance) {
             feedback = '❄️ COLD! Getting farther!';
-            color = '#007bff';
+            color = '#3b82f6';
         } else {
             feedback = 'No change!';
             color = '#6c757d';

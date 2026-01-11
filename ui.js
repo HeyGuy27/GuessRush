@@ -1,7 +1,7 @@
-import { getGameState, setGameState, _internalGameState } from './state.js';
+import { getGameState, setGameState, _internalGameState, getCurrentNumber } from './state.js';
 import { modeExplanations, difficultyExplanations, getDifficultyExplanation, tierColors, tierIcons, BLITZ_TIME_SEC, CHAOS_INTERVAL_MS } from './config.js';
 import { unlockAchievement, getAchievementDescription, achievementDescriptions } from './achievements.js';
-import { getItem, setItem, removeItem } from './storage.js';
+import { getItem, setItem, removeItem, getDiscoveries } from './storage.js';
 import { 
     handleGuess as gameLogicHandleGuess, 
     handleHelp as gameLogicHandleHelp, 
@@ -48,6 +48,7 @@ export const elements = {
 export function initGame() { 
     loadFromLocalStorage();
     setupEventListeners(); 
+    initToastContainer();
     updateUI();
     updateModeExplanation();
     updateDifficultyExplanation();
@@ -55,11 +56,28 @@ export function initGame() {
     updateStatsDisplay();
 }
 
+/**
+ * Initialize the permanent toast container for Easter Egg notifications
+ */
+function initToastContainer() {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        container.setAttribute('role', 'region');
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-label', 'Easter Egg Messages');
+        document.body.appendChild(container);
+    }
+}
+
 function loadFromLocalStorage() { 
     const savedStats = getItem('guessRushStats'); 
     const savedAchievementsTiers = getItem('guessRushAchievementsTiers');
     const savedAchievements = getItem('guessRushAchievements');
     const savedTheme = getItem('guessRushTheme');
+    const savedEasterEggs = getItem('guessRushEasterEggs');
 
     if (savedStats) {
         setGameState(state => ({ ...state, stats: savedStats }));
@@ -69,6 +87,9 @@ function loadFromLocalStorage() {
     }
     if (savedAchievements) {
         setGameState(state => ({ ...state, achievements: new Set(savedAchievements) }));
+    }
+    if (savedEasterEggs) {
+        setGameState(state => ({ ...state, easterEggs: savedEasterEggs }));
     }
     if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
@@ -84,6 +105,9 @@ export function saveToLocalStorage() {
     setItem('guessRushStats', state.stats);
     setItem('guessRushAchievementsTiers', state.achievementsTiers || {});
     setItem('guessRushAchievements', Array.from(state.achievements));
+    if (state.easterEggs) {
+        setItem('guessRushEasterEggs', state.easterEggs);
+    }
 }
 
 export function setupEventListeners() {
@@ -132,6 +156,48 @@ export function setupEventListeners() {
             personalStatsModal.classList.add('hidden');
         });
     }
+    
+    window.addEventListener('newDiscovery', (event) => {
+        const { id, message } = event.detail;
+        const notification = document.createElement('div');
+        notification.className = 'new-discovery-notification';
+        notification.innerHTML = `
+            <div class="new-discovery-icon">🎉</div>
+            <div class="new-discovery-content">
+                <div class="new-discovery-title">New Discovery!</div>
+                <div class="new-discovery-message">${message}</div>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 500);
+        }, 4000);
+        
+        const content = document.getElementById('personalStatsContent');
+        if (content && !personalStatsModal.classList.contains('hidden')) {
+            const discoveriesTab = content.querySelector('#tab-discoveries');
+            if (discoveriesTab) {
+                discoveriesTab.innerHTML = renderDiscoveries();
+                const newCard = discoveriesTab.querySelector(`[data-egg-id="${id}"]`);
+                if (newCard) {
+                    newCard.classList.add('new-discovery');
+                    setTimeout(() => {
+                        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
+            }
+        }
+    });
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey || e.metaKey) {
             switch(e.key) {
@@ -427,6 +493,122 @@ export function showAchievementNotification(achievement, tier = null) {
     }, 4000);
 }
 
+export function showEasterEgg(message) {
+    if (!message) return;
+    
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        initToastContainer();
+        return showEasterEgg(message);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = 'easter-egg-toast';
+    
+    const messageSpan = document.createElement('span');
+    messageSpan.className = 'toast-message';
+    messageSpan.textContent = message;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.innerHTML = '×';
+    closeBtn.setAttribute('aria-label', 'Close notification');
+    closeBtn.setAttribute('type', 'button');
+    
+    toast.appendChild(messageSpan);
+    toast.appendChild(closeBtn);
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 10);
+    
+    const removeToast = () => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    };
+    
+    closeBtn.addEventListener('click', removeToast);
+    
+    const autoDismissTimer = setTimeout(removeToast, 4000);
+    closeBtn.addEventListener('click', () => {
+        clearTimeout(autoDismissTimer);
+    });
+}
+
+export const displayEasterEgg = showEasterEgg;
+
+/**
+ * Show a meta-achievement notification with premium styling
+ * @param {string} title - Achievement title
+ * @param {string} message - Achievement message
+ * @param {boolean} isGrand - Whether this is a grand achievement (triggers confetti)
+ */
+export function showMetaAchievement(title, message, isGrand = false) {
+    const notification = document.createElement('div');
+    notification.className = 'meta-achievement-notification';
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 2rem;">👑</span>
+            <div>
+                <div style="font-weight: bold; font-size: 1.1rem;">${title}</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">${message}</div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    if (isGrand) {
+        notification.classList.add('grand-achievement');
+        
+        setTimeout(() => {
+            triggerConfetti();
+            
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '9998';
+            flash.style.animation = 'flash 0.5s ease-out';
+            
+            document.body.appendChild(flash);
+            
+            setTimeout(() => {
+                if (flash.parentNode) {
+                    flash.parentNode.removeChild(flash);
+                }
+            }, 500);
+        }, 300);
+    }
+    
+    notification.classList.add('bounce');
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideIn 0.4s ease-out reverse';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 400);
+    }, 5000);
+}
+
+if (typeof window !== 'undefined') {
+    window.showMetaAchievement = showMetaAchievement;
+}
+
 export function triggerConfetti() {
     if (typeof confetti !== 'undefined') {
         confetti({
@@ -500,6 +682,7 @@ export function updateGuessHistoryDisplay() {
         if (item.type === 'correct') cls += ' correct';
         else if (item.type === 'hot') cls += ' hot';
         else if (item.type === 'cold') cls += ' cold';
+        else if (item.type === 'neutral') cls += ' neutral';
         return `<span class="${cls}">${item.value}</span>`;
     }).join('');
 }
@@ -517,6 +700,7 @@ export function updateBotGuessHistoryDisplay() {
         if (item.type === 'correct') cls += ' correct';
         else if (item.type === 'hot') cls += ' hot';
         else if (item.type === 'cold') cls += ' cold';
+        else if (item.type === 'neutral') cls += ' neutral';
         return `<span class="${cls}">${item.value}</span>`;
     }).join('');
 }
@@ -605,7 +789,7 @@ export function showWelcomeBack(name, first = false) {
     msg.style.top = '24px';
     msg.style.left = '50%';
     msg.style.transform = 'translateX(-50%)';
-    msg.style.background = '#2196f3';
+    msg.style.background = '#3b82f6';
     msg.style.color = '#fff';
     msg.style.padding = '0.7em 1.5em';
     msg.style.borderRadius = '8px';
@@ -614,6 +798,105 @@ export function showWelcomeBack(name, first = false) {
     msg.style.boxShadow = '0 2px 12px #0002';
     document.body.appendChild(msg);
     setTimeout(() => msg.remove(), 2200);
+}
+
+/**
+ * Render the Discoveries tab content
+ * @returns {string} HTML string for discoveries
+ */
+export function renderDiscoveries() {
+    const discoveries = getDiscoveries();
+    const discoveredIds = discoveries.map(d => typeof d === 'string' ? d : d.id);
+    
+    // All Easter Egg definitions
+    const allEasterEggs = [
+        { id: 'beginners_luck', message: "Beginner's luck… or are you a genius in disguise? 🎓🕵️", icon: '🎓' },
+        { id: 'calculated', message: "Calculated… maybe. 🤔📐", icon: '🤔' },
+        { id: 'stop_showing_off', message: "Stop showing off. We get it. 😎", icon: '😎' },
+        { id: 'no_hints_master', message: "You either know what you're doing... or you're way too proud. 😏", icon: '😏' },
+        { id: 'witchcraft', message: "Is this… luck or witchcraft? 🔮", icon: '🔮' },
+        { id: 'just_vibes', message: "No logic. No plan. Just vibes. ✨", icon: '✨' },
+        { id: 'spray_pray', message: "Spray and pray, huh? 💥🎯", icon: '💥' },
+        { id: 'qa_engineer', message: "Testing the boundaries? You'd make a great QA engineer. ⌨️", icon: '⌨️' },
+        { id: 'emotional_hotcold', message: "You're playing emotional hot/cold. 😵‍💫", icon: '😵‍💫' },
+        { id: 'colder_ex', message: "Colder than your ex! 🧊💔", icon: '🧊' },
+        { id: 'meta_guess', message: "Guessing the number of your own guess? That's deep. 🌀", icon: '🌀' }
+    ];
+    
+    const discoveredCount = discoveredIds.length;
+    const totalCount = allEasterEggs.length;
+    const progressPercentage = Math.round((discoveredCount / totalCount) * 100);
+    
+    // Check meta-achievement milestones
+    const milestones = getItem('guessRush_milestones') || {};
+    const rabbitHoleUnlocked = milestones.rabbitHole || false;
+    const architectUnlocked = milestones.architectOfSecrets || false;
+    
+    // Find discovery dates
+    const getDiscoveryDate = (eggId) => {
+        const discovery = discoveries.find(d => (typeof d === 'string' ? d : d.id) === eggId);
+        if (!discovery) return null;
+        if (typeof discovery === 'string') return null; // Legacy format
+        return discovery.discoveredAt ? new Date(discovery.discoveredAt).toLocaleDateString() : null;
+    };
+    
+    const discoveriesHTML = `
+        <div class="discoveries-header">
+            <div class="global-progress-section">
+                <div class="global-progress-title">🎯 Global Progress</div>
+                <div class="global-progress-goals">
+                    <div class="global-progress-goal ${rabbitHoleUnlocked ? 'unlocked' : 'locked'}">
+                        <div class="goal-icon">${rabbitHoleUnlocked ? '🏆' : '🔒'}</div>
+                        <div class="goal-text">
+                            <div class="goal-title">The Rabbit Hole</div>
+                            <div class="goal-description">Discover your first Easter Egg</div>
+                        </div>
+                        ${rabbitHoleUnlocked ? '<div class="goal-status">✅ Unlocked</div>' : ''}
+                    </div>
+                    <div class="global-progress-goal ${architectUnlocked ? 'unlocked' : 'locked'}">
+                        <div class="goal-icon">${architectUnlocked ? '👑' : '🔒'}</div>
+                        <div class="goal-text">
+                            <div class="goal-title">The Architect of Secrets</div>
+                            <div class="goal-description">Discover all 11 Easter Eggs</div>
+                        </div>
+                        ${architectUnlocked ? '<div class="goal-status">✅ Unlocked</div>' : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="discoveries-progress">
+                <div class="discoveries-progress-text">${discoveredCount} / ${totalCount} Discoveries Found</div>
+                <div class="discoveries-progress-bar">
+                    <div class="discoveries-progress-fill" style="width: ${progressPercentage}%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="discoveries-grid">
+            ${allEasterEggs.map(egg => {
+                const isDiscovered = discoveredIds.includes(egg.id);
+                const discoveryDate = getDiscoveryDate(egg.id);
+                
+                if (isDiscovered) {
+                    return `
+                        <div class="discovery-card unlocked" data-egg-id="${egg.id}">
+                            <div class="discovery-icon">${egg.icon}</div>
+                            <div class="discovery-message">${egg.message}</div>
+                            ${discoveryDate ? `<div class="discovery-date">First found: ${discoveryDate}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="discovery-card locked" data-egg-id="${egg.id}">
+                            <div class="discovery-lock-icon">🔒</div>
+                            <div class="discovery-unknown">Unknown Discovery</div>
+                            <div class="discovery-placeholder">???</div>
+                        </div>
+                    `;
+                }
+            }).join('')}
+        </div>
+    `;
+    
+    return discoveriesHTML;
 }
 
 export function renderPersonalStats() {
@@ -629,62 +912,57 @@ export function renderPersonalStats() {
     const currentDifficulty = state.difficulty;
     const currentModeStats = getCalculatedStats(currentMode, currentDifficulty);
 
+    const winRate = state.stats.gamesPlayed ? Math.round((state.stats.gamesWon / state.stats.gamesPlayed) * 100) : 0;
+    
     const generalStatsHTML = `
-        <div class="personal-stats-grid">
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Games Played</div>
-                <div class="personal-stat-value">${state.stats.gamesPlayed || 0}</div>
+        <div class="hero-summary">
+            <div class="hero-stat-card">
+                <div class="hero-stat-label">BEST SCORE</div>
+                <div class="hero-stat-value">${showScore(state.stats.bestScore)}</div>
             </div>
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Games Won</div>
-                <div class="personal-stat-value">${state.stats.gamesWon || 0}</div>
+            <div class="hero-stat-card">
+                <div class="hero-stat-label">WIN RATE</div>
+                <div class="hero-stat-value">${winRate}%</div>
             </div>
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Win Rate</div>
-                <div class="personal-stat-value">${state.stats.gamesPlayed ? Math.round((state.stats.gamesWon / state.stats.gamesPlayed) * 100) : 0}%</div>
-            </div>
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Best Score</div>
-                <div class="personal-stat-value">${showScore(state.stats.bestScore)}</div>
-            </div>
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Total Score</div>
-                <div class="personal-stat-value">${state.stats.totalScore || 0}</div>
-            </div>
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Perfect Games</div>
-                <div class="personal-stat-value">${state.stats.perfectGames || 0} ⭐</div>
-            </div>
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Total Attempts</div>
-                <div class="personal-stat-value">${state.stats.totalAttempts || 0}</div>
-            </div>
-            <div class="personal-stat-item">
-                <div class="personal-stat-label">Avg Win Time</div>
-                <div class="personal-stat-value">${state.stats.avgWinTime ? Math.round(state.stats.avgWinTime) : 0}s</div>
+            <div class="hero-stat-card">
+                <div class="hero-stat-label">TOTAL GAMES</div>
+                <div class="hero-stat-value">${state.stats.gamesPlayed || 0}</div>
             </div>
         </div>
-        <div class="personal-stats-section ranking-section">
-            <h3>🏆 Player Ranking</h3>
-            <div class="ranking-info">
-                <div class="ranking-title">${rankingProgress.currentTitle}</div>
-                <div class="ranking-level">Level ${rankingProgress.currentLevel}</div>
-                <div class="ranking-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${rankingProgress.progressPercentage}%"></div>
-                    </div>
-                    <div class="progress-text">
-                        ${rankingProgress.expInCurrentLevel} / ${rankingProgress.expNeededForNextLevel} XP
-                        (${rankingProgress.progressPercentage}%)
-                    </div>
+        <div class="secondary-stats-list">
+            <div class="secondary-stat-item">
+                <span class="secondary-stat-label">GAMES WON</span>
+                <span class="secondary-stat-value">${state.stats.gamesWon || 0}</span>
+            </div>
+            <div class="secondary-stat-item">
+                <span class="secondary-stat-label">TOTAL SCORE</span>
+                <span class="secondary-stat-value">${state.stats.totalScore || 0}</span>
+            </div>
+            <div class="secondary-stat-item">
+                <span class="secondary-stat-label">PERFECT GAMES</span>
+                <span class="secondary-stat-value">${state.stats.perfectGames || 0}</span>
+            </div>
+            <div class="secondary-stat-item">
+                <span class="secondary-stat-label">TOTAL ATTEMPTS</span>
+                <span class="secondary-stat-value">${state.stats.totalAttempts || 0}</span>
+            </div>
+            <div class="secondary-stat-item">
+                <span class="secondary-stat-label">AVG WIN TIME</span>
+                <span class="secondary-stat-value">${state.stats.avgWinTime ? Math.round(state.stats.avgWinTime) : 0}s</span>
+            </div>
+        </div>
+        <div class="player-rank-card">
+            <div class="player-rank-left">
+                <div class="player-rank-title">${rankingProgress.currentTitle}</div>
+                <div class="player-rank-level">Level ${rankingProgress.currentLevel}</div>
+            </div>
+            <div class="player-rank-right">
+                <div class="player-rank-progress-bar">
+                    <div class="player-rank-progress-fill" style="width: ${rankingProgress.progressPercentage}%"></div>
                 </div>
-                <div class="ranking-next">Next: ${rankingProgress.nextTitle} (Level ${rankingProgress.nextLevel})</div>
-                ${rankingProgress.nextTitle && rankingProgress.nextTitle !== rankingProgress.currentTitle ? `
-                  <div class="ranking-xp-to-next">
+                <div class="player-rank-progress-text">
                     ${rankingProgress.expInCurrentLevel} / ${rankingProgress.expNeededForNextLevel} XP
-                    (${rankingProgress.expNeededForNextLevel - rankingProgress.expInCurrentLevel} XP to next level: <b>${rankingProgress.nextTitle}</b>)
-                  </div>
-                ` : ''}
+                </div>
             </div>
         </div>
     `;
@@ -704,28 +982,17 @@ export function renderPersonalStats() {
     };
 
     const personalBestsHTML = `
-        <div class="personal-stats-section">
-            <h3>🏁 Personal Bests</h3>
-            <div class="personal-bests-grid">
-                ${Object.entries(personalBests).map(([mode, bests]) => {
-                    const score = (bests.bestScore === null || bests.bestScore === undefined || bests.bestScore === 'N/A') ? 0 : bests.bestScore;
-                    const time = (bests.bestTime === null || bests.bestTime === undefined || bests.bestTime === 'N/A') ? 0 : bests.bestTime;
-                    const efficiency = (bests.bestEfficiency === null || bests.bestEfficiency === undefined || bests.bestEfficiency === 'N/A') ? 'Give it a try' : bests.bestEfficiency;
-                    return `
-                    <div class="mode-best-item">
-                        <div class="mode-best-title">
-                            <span class="mode-best-icon">${modeIcons[mode.toLowerCase()] || ''}</span>
-                            ${mode.charAt(0).toUpperCase() + mode.slice(1)}
-                        </div>
-                        <div class="mode-best-stats">
-                            <div class="mode-best-stat">Score: ${score}</div>
-                            <div class="mode-best-stat">Time: ${time}</div>
-                            <div class="mode-best-stat">Efficiency: ${efficiency}</div>
-                        </div>
-                    </div>
-                    `;
-                }).join('')}
-            </div>
+        <div class="personal-bests-grid-cyber">
+            ${Object.entries(personalBests).map(([mode, bests]) => {
+                const score = (bests.bestScore === null || bests.bestScore === undefined || bests.bestScore === 'N/A') ? 0 : bests.bestScore;
+                return `
+                <div class="mode-best-card-cyber">
+                    <div class="mode-best-icon-cyber">${modeIcons[mode.toLowerCase()] || ''}</div>
+                    <div class="mode-best-name-cyber">${mode.charAt(0).toUpperCase() + mode.slice(1)}</div>
+                    <div class="mode-best-score-cyber">${score}</div>
+                </div>
+                `;
+            }).join('')}
         </div>
     `;
 
@@ -784,18 +1051,27 @@ export function renderPersonalStats() {
         </div>
     ` : '<div class="personal-stats-section"><h3>Daily Challenge Stats</h3><div class="daily-stats">No daily stats yet.</div></div>';
 
+    // Discoveries HTML
+    const discoveriesHTML = renderDiscoveries();
+    
     // Tabs HTML
     const html = `
-        <div class="stats-tabs">
-            <button class="tab-btn active" data-tab="general">General</button>
-            <button class="tab-btn" data-tab="bests">Personal Bests</button>
-            <button class="tab-btn" data-tab="mode">Mode Stats</button>
-            <button class="tab-btn" data-tab="daily">Daily Challenge</button>
+        <div class="stats-tabs-wrapper">
+            <div class="stats-tabs">
+                <button class="tab-btn active" data-tab="general">General</button>
+                <button class="tab-btn" data-tab="bests">Personal Bests</button>
+                <button class="tab-btn" data-tab="mode">Mode Stats</button>
+                <button class="tab-btn" data-tab="daily">Daily Challenge</button>
+                <button class="tab-btn" data-tab="discoveries">Discoveries 🔍</button>
+            </div>
         </div>
-        <div class="tab-content" id="tab-general">${generalStatsHTML}</div>
-        <div class="tab-content hidden" id="tab-bests">${personalBestsHTML}</div>
-        <div class="tab-content hidden" id="tab-mode">${modeStatsHTML}</div>
-        <div class="tab-content hidden" id="tab-daily">${dailyStatsHTML}</div>
+        <div class="stats-content-wrapper">
+            <div class="tab-content" id="tab-general">${generalStatsHTML}</div>
+            <div class="tab-content hidden" id="tab-bests">${personalBestsHTML}</div>
+            <div class="tab-content hidden" id="tab-mode">${modeStatsHTML}</div>
+            <div class="tab-content hidden" id="tab-daily">${dailyStatsHTML}</div>
+            <div class="tab-content hidden" id="tab-discoveries">${discoveriesHTML}</div>
+        </div>
     `;
 
     content.innerHTML = html;
@@ -1005,10 +1281,43 @@ export function handleResetStats() {
                 titles: ['Novice', 'Apprentice', 'Explorer', 'Strategist', 'Mastermind', 'Virtuoso', 'Legend', 'Mythic', 'Divine', 'Transcendent']
             }
         };
-        setGameState(state => ({ ...state, stats: resetStats }));
+        
+        const resetEasterEggs = {
+            guessTimestamps: [],
+            consecutiveFirstGuessWins: 0,
+            gamesPlayedWithoutHints: 0,
+            lastThreeGuessesDistances: [],
+            recentGuessesWithoutHints: 0,
+            consecutiveFastGuesses: 0,
+            lastFastGuessTime: null,
+            consecutiveBoundaryGuesses: 0,
+            lastBoundaryGuess: null,
+            recentWinGuesses: [],
+            consecutiveFarGuessesWithoutHints: 0,
+            lastTriggeredEgg: null,
+            hasTriggeredMetaGuess: false
+        };
+        
+        setGameState(state => ({ ...state, stats: resetStats, easterEggs: resetEasterEggs }));
+        
+        removeItem('guessRush_discoveries');
+        removeItem('guessRush_milestones');
+        
         saveToLocalStorage();
         updateStatsDisplay();
-        displayFeedbackMessage('Statistics have been reset', 'hint');
+        
+        const personalStatsModal = document.getElementById('personalStatsModal');
+        if (personalStatsModal && !personalStatsModal.classList.contains('hidden')) {
+            const content = document.getElementById('personalStatsContent');
+            if (content) {
+                const discoveriesTab = content.querySelector('#tab-discoveries');
+                if (discoveriesTab) {
+                    discoveriesTab.innerHTML = renderDiscoveries();
+                }
+            }
+        }
+        
+        displayFeedbackMessage('Statistics and discoveries have been reset', 'hint');
     }
 }
 
@@ -1106,7 +1415,10 @@ function handleGuess() {
         return;
     }
     if (result && result.type === 'hint') {
-        displayFeedbackMessage(result.message, result.type);
+        let type = result.guessType || 'hint';
+        if (result.hot) type = 'hot';
+        if (result.cold) type = 'cold';
+        displayFeedbackMessage(result.message, type);
         elements.guessInput.value = '';
     }
     if (result && result.type === 'error' && result.message === 'Please enter a valid number.') {
@@ -1147,7 +1459,7 @@ function handleGuess() {
                 mode: result.mode,
                 difficulty: state.difficulty,
                 usedHelp: state.usedHelp,
-                targetNumber: state.currentNumber,
+                targetNumber: getCurrentNumber(),
                 guessHistory: state.guessHistory || [],
                 minRange: state.minRange,
                 maxRange: state.maxRange,
@@ -1252,7 +1564,40 @@ export function handleResetWelcome() {
     if (confirm('Reset the welcome flow? This will show the welcome screen again on the next page load.')) {
         removeItem('guessRushWelcomeCompleted');
         removeItem('guessRushPlayerName');
-        displayFeedbackMessage('Welcome flow reset! Refresh the page to see it again.', 'hint');
+        
+        const resetEasterEggs = {
+            guessTimestamps: [],
+            consecutiveFirstGuessWins: 0,
+            gamesPlayedWithoutHints: 0,
+            lastThreeGuessesDistances: [],
+            recentGuessesWithoutHints: 0,
+            consecutiveFastGuesses: 0,
+            lastFastGuessTime: null,
+            consecutiveBoundaryGuesses: 0,
+            lastBoundaryGuess: null,
+            recentWinGuesses: [],
+            consecutiveFarGuessesWithoutHints: 0,
+            lastTriggeredEgg: null,
+            hasTriggeredMetaGuess: false
+        };
+        
+        setGameState(state => ({ ...state, easterEggs: resetEasterEggs }));
+        removeItem('guessRush_discoveries');
+        removeItem('guessRush_milestones');
+        saveToLocalStorage();
+        
+        const personalStatsModal = document.getElementById('personalStatsModal');
+        if (personalStatsModal && !personalStatsModal.classList.contains('hidden')) {
+            const content = document.getElementById('personalStatsContent');
+            if (content) {
+                const discoveriesTab = content.querySelector('#tab-discoveries');
+                if (discoveriesTab) {
+                    discoveriesTab.innerHTML = renderDiscoveries();
+                }
+            }
+        }
+        
+        displayFeedbackMessage('Welcome flow and discoveries have been reset! Refresh the page to see the welcome screen again.', 'hint');
     }
 }
 
@@ -1373,13 +1718,9 @@ function showEnhancedGameOverScreen(gameData) {
     modal.style.zIndex = '10010';
     document.body.style.overflow = 'hidden';
     
-    // Update UI elements
     updateGameOverScreenContent(gameData);
-    
-    // Setup event listeners
     setupGameOverScreenListeners(modal);
     
-    // Add shake effect to the title
     const title = document.getElementById('gameOverScreenTitle');
     if (title) {
         title.style.animation = 'none';
@@ -1548,7 +1889,7 @@ export function showGameSummaryIfNeeded(result) {
             mode: result.mode,
             difficulty: state.difficulty,
             usedHelp: state.usedHelp,
-            targetNumber: state.currentNumber,
+            targetNumber: getCurrentNumber(),
             guessHistory: state.guessHistory || [],
             minRange: state.minRange,
             maxRange: state.maxRange,

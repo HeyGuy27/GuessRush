@@ -1,6 +1,27 @@
 # TODO List - GuessRush Project Improvements
 
 ## ✅ Recently Completed
+- **Easter Egg System**: Complete implementation of 11 unique Easter Eggs that monitor player behavior across sessions
+  - State tracking for guess timestamps, consecutive wins, games without hints, guess distances, and more
+  - Priority system to select the most rare Easter Egg when multiple conditions are met
+  - Prevention of repetitive triggers using `lastTriggeredEgg` and per-game flags
+  - Integration with game logic to evaluate conditions on each guess
+- **Easter Egg Discoveries Gallery**: New "Discoveries 🔍" tab in Personal Stats modal
+  - Progress bar showing "X/11 Discoveries Found"
+  - Discovery cards with locked/unlocked states
+  - "New Discovery!" badge animation for first-time unlocks
+  - Persistent storage of discoveries in localStorage
+- **Easter Egg Toast Notifications**: Redesigned sleek, compact, dismissible toast system
+  - Permanent toast container with vertical stacking
+  - Purple/violet gradient design with close button
+  - Auto-dismiss after 4 seconds with slide-out animation
+  - Mobile-responsive positioning (top-center on mobile, bottom-right on desktop)
+- **Personal Stats Modal Redesign**: Complete "Cyber-Clean" Glassmorphism theme
+  - Animated breathing background with gradient animation
+  - Rotating neon borders on cards using conic gradients
+  - Enhanced hover interactions with scale, glow, and faster border animations
+  - Compact tabs, horizontal player rank card, hero summary for top 3 stats
+  - 3-4 column grid for Personal Bests with glass surface styling
 - Personal stats UI overhaul (tabs, cards, icons, larger fonts, player rank improvements)
 - Stats logic: robust null/default handling, correct best time/score logic
 - Input validation for out-of-range guesses
@@ -125,5 +146,10 @@
 - [x] Accessibility improvements for modals and game controls
 - [x] Bug fixes for timer, modal, and UI reset logic
 - [x] Fixed Double Chaos bug: attempts now reset when timer resets and range/number change
+- [x] Easter Egg System: 11 unique Easter Eggs with behavior monitoring and discovery tracking
+- [x] Discoveries Gallery: Tab in Personal Stats showing locked/unlocked Easter Eggs with progress tracking
+- [x] Toast Notification System: Redesigned sleek, compact, dismissible Easter Egg notifications
+- [x] Personal Stats Modal: Complete glassmorphism redesign with animated backgrounds and neon borders
 - [ ] Consider further polish for modal transitions and timer accessibility
+- [ ] Add screenshots of Easter Egg system and Discoveries gallery to README
 
